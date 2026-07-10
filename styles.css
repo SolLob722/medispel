@@ -36,29 +36,28 @@ body { background: var(--bg); }
 
 .sidebar-link {
   transition: all 0.2s ease;
-  border-radius: 12px;
-  margin: 2px 8px;
+  border-radius: 8px;
   position: relative;
 }
 .sidebar-link.active {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: white;
-  box-shadow: 0 4px 16px rgba(5, 150, 105, 0.3);
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
 }
 .sidebar-link.active::before {
   content: '';
   position: absolute;
-  left: -8px;
+  left: -3px;
   top: 50%;
   transform: translateY(-50%);
-  width: 4px;
-  height: 20px;
+  width: 3px;
+  height: 16px;
   background: var(--primary-light);
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 3px 3px 0;
 }
 .sidebar-link:not(.active):hover {
-  background: rgba(255,255,255,0.08);
-  color: white;
+  background: #f1f5f9;
+  color: var(--text);
 }
 
 .card {
