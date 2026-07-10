@@ -1,0 +1,2632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediHub - Doctor Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+    
+    * { font-family: 'Poppins', sans-serif; }
+    
+    .sidebar-link.active { 
+      background: linear-gradient(90deg, #0ea5e9 0%, #0284c7 100%); 
+      color: white; 
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+    }
+    .modal { backdrop-filter: blur(8px); }
+    .status-active { background: #dcfce7; color: #166534; }
+    .status-inactive { background: #fee2e2; color: #991b1b; }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-completed { background: #dbeafe; color: #1e40af; }
+    .status-scheduled { background: #e0e7ff; color: #3730a3; }
+    .status-approved { background: #dcfce7; color: #166534; }
+    .tab-btn.active { border-bottom: 2px solid #0ea5e9; color: #0ea5e9; font-weight: 600; }
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideInLeft { from { opacity: 0; transform: translateX(-100%); } to { opacity: 1; transform: translateX(0); } }
+    .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    .slide-in-left { animation: slideInLeft 0.3s ease-out; }
+    .scroll-hidden::-webkit-scrollbar { display: none; }
+    .scroll-hidden { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    .portal-card { 
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+    }
+    .portal-card:hover { 
+      transform: translateY(-8px); 
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15); 
+    }
+    
+    .stat-card:hover {
+      box-shadow: 0 10px 40px rgba(14, 165, 233, 0.15);
+      transform: translateY(-3px);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    }
+    
+    .gradient-bg {
+      background: linear-gradient(135deg, #0ea5e9 0%, #10b981 50%, #8b5cf6 100%);
+    }
+    
+    .hero-gradient {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdfa 100%);
+    }
+    
+    .floating {
+      animation: floating 3s ease-in-out infinite;
+    }
+    @keyframes floating {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-15px); }
+    }
+  </style>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-50 text-gray-900">
+<!-- Login Page -->
+  <div id="loginPage" class="min-h-screen hero-gradient flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8">
+      <div class="flex items-center justify-center gap-3 mb-8">
+        <div class="w-16 h-16 bg-gradient-to-br from-sky-500 to-emerald-500 rounded-2xl flex items-center justify-center">
+          <i class="fas fa-heartbeat text-white text-3xl"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">MediHub</h1>
+          <p class="text-sm text-gray-500">Doctor Portal</p>
+        </div>
+      </div>
+      
+      <h2 class="text-2xl font-bold text-gray-900 mb-2 text-center">Welcome Back</h2>
+      <p class="text-gray-500 mb-8 text-center">Sign in to access your doctor portal</p>
+      
+      <button onclick="openLoginModal()" class="w-full btn-primary hover:shadow-lg text-white py-4 px-6 rounded-2xl font-semibold transition-all flex items-center justify-center gap-2">
+        <i class="fas fa-sign-in-alt"></i>
+        Sign In
+      </button>
+      
+      <div class="mt-6 text-center text-sm text-gray-500">
+        <p>Demo credentials: <span class="font-semibold text-gray-900">Doc1</span> / <span class="font-semibold text-gray-900">Doc@1234</span></p>
+      </div>
+    </div>
+  </div>
+
+<!-- Application -->
+  <div id="app" class="flex h-screen overflow-hidden hidden">
+    <aside id="sidebar" class="w-72 bg-white border-r border-gray-200 flex-shrink-0 hidden md:flex flex-col transition-all duration-300">
+      <div class="p-6 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-gradient-to-br from-sky-500 to-emerald-500 rounded-2xl flex items-center justify-center">
+              <i class="fas fa-heartbeat text-white text-2xl"></i>
+            </div>
+            <div>
+              <h1 class="text-xl font-bold text-gray-900">MediHub</h1>
+              <p class="text-xs text-gray-500">Care Connected</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="roleDisplay" class="p-4 border-b border-gray-200">
+        <div class="bg-gradient-to-r from-sky-50 to-emerald-50 rounded-xl p-4">
+          <p class="text-xs font-semibold text-gray-600 mb-1">Current Role</p>
+          <p id="currentRoleText" class="text-base font-bold text-gray-900 capitalize"></p>
+        </div>
+      </div>
+      
+      <nav id="sidebarNav" class="flex-1 p-4 space-y-2 overflow-y-auto scroll-hidden"></nav>
+      
+      <div class="p-4 border-t border-gray-200 bg-gray-50">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-gradient-to-br from-sky-500 to-emerald-500 rounded-full flex items-center justify-center text-white font-semibold text-lg" id="userAvatar">U</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-gray-900 truncate" id="userName">User</p>
+            <p class="text-xs text-gray-500 truncate" id="userRoleText"></p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+    <aside id="mobileSidebar" class="fixed inset-y-0 left-0 w-72 bg-white flex-shrink-0 flex flex-col transition-transform duration-300 -translate-x-full z-50 md:hidden shadow-2xl">
+      <div class="p-6 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-gradient-to-br from-sky-500 to-emerald-500 rounded-2xl flex items-center justify-center">
+              <i class="fas fa-heartbeat text-white text-2xl"></i>
+            </div>
+            <div>
+              <h1 class="text-xl font-bold text-gray-900">MediHub</h1>
+              <p class="text-xs text-gray-500">Care Connected</p>
+            </div>
+          </div>
+          <button id="closeMobileSidebar" class="text-gray-500 hover:text-gray-700">
+            <i class="fas fa-times text-2xl"></i>
+          </button>
+        </div>
+      </div>
+      <div id="mobileNav" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
+    </aside>
+
+    <div class="flex-1 flex flex-col overflow-hidden bg-gray-50">
+      <header class="bg-white border-b border-gray-200 px-4 md:px-8 py-4 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <button id="mobileMenuBtn" class="md:hidden text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-100 rounded-xl">
+              <i class="fas fa-bars text-2xl"></i>
+            </button>
+            <div>
+              <h2 class="text-2xl md:text-3xl font-bold text-gray-900" id="pageTitle">Dashboard</h2>
+              <p class="text-sm text-gray-500 hidden sm:block" id="pageSubtitle">Welcome back</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <button class="relative p-3 text-gray-600 hover:bg-gray-100 rounded-xl transition-all">
+              <i class="fas fa-bell text-xl"></i>
+              <span class="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main id="contentArea" class="flex-1 overflow-y-auto p-4 md:p-8 pb-24"></main>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="modal fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-[60] p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div class="p-6 md:p-8 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10">
+        <h3 class="text-xl md:text-2xl font-bold text-gray-900" id="modalTitle">Add Record</h3>
+        <button id="closeModal" class="text-gray-400 hover:text-gray-600 transition-all p-2 hover:bg-gray-100 rounded-xl">
+          <i class="fas fa-times text-2xl"></i>
+        </button>
+      </div>
+      <form id="modalForm" class="p-6 md:p-8 space-y-5"></form>
+    </div>
+  </div>
+
+<script>
+const DB_NAME = 'MediHubDB';
+const DB_VERSION = 5;
+let db;
+let currentRole = 'doctor';
+let currentView = 'dashboard';
+let editingId = null;
+let currentUser = null;
+
+const initDB = () => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      db = request.result;
+      resolve(db);
+    };
+    request.onupgradeneeded = (event) => {
+      db = event.target.result;
+      const stores = ['patients', 'doctors', 'nurses', 'vitals', 'clinics', 'hospitals', 'medications', 'appointments', 'records', 'admins', 'medicalCodes', 'auditLogs', 'chatMessages', 'doctorSchedules', 'payments', 'expenses', 'claims', 'invoices', 'prescriptions', 'doctorNotes', 'procedures'];
+      stores.forEach(store => {
+        if (!db.objectStoreNames.contains(store)) db.createObjectStore(store, { keyPath: 'id', autoIncrement: true });
+      });
+    };
+  });
+};
+
+const dbAdd = (store, data) => {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    const request = tx.objectStore(store).add(data);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+};
+const dbGetAll = (store) => new Promise((resolve, reject) => {
+  const tx = db.transaction(store, 'readonly');
+  const request = tx.objectStore(store).getAll();
+  request.onsuccess = () => resolve(request.result);
+  request.onerror = () => reject(request.error);
+});
+const dbGetById = (store, id) => new Promise((resolve, reject) => {
+  const tx = db.transaction(store, 'readonly');
+  const request = tx.objectStore(store).get(id);
+  request.onsuccess = () => resolve(request.result);
+  request.onerror = () => reject(request.error);
+});
+const dbUpdate = (store, data) => new Promise((resolve, reject) => {
+  const tx = db.transaction(store, 'readwrite');
+  const request = tx.objectStore(store).put(data);
+  request.onsuccess = () => resolve(request.result);
+  request.onerror = () => reject(request.error);
+});
+const dbDelete = (store, id) => new Promise((resolve, reject) => {
+  const tx = db.transaction(store, 'readwrite');
+  const request = tx.objectStore(store).delete(id);
+  request.onsuccess = () => resolve();
+  request.onerror = () => reject(request.error);
+});
+
+const loginUser = async (role, username, password) => {
+  const store = role === 'admin' ? 'admins' : role === 'doctor' ? 'doctors' : role === 'nurse' ? 'nurses' : 'patients';
+  const users = await dbGetAll(store);
+  const user = users.find(u => u.username === username && u.password === password);
+  
+  if (user) {
+    currentUser = user;
+    currentRole = role;
+    return user;
+  }
+  return null;
+};
+
+const openLoginModal = () => {
+  const formHtml = `
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Username</label>
+        <input type="text" name="username" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none" placeholder="Enter your username">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+        <input type="password" name="password" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none" placeholder="Enter your password">
+      </div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-all">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">Login</button>
+    </div>
+  `;
+  
+  openModal('Login as Doctor', formHtml, async (form) => {
+    const username = form.username.value;
+    const password = form.password.value;
+    
+    const user = await loginUser('doctor', username, password);
+    if (user) {
+      closeModal();
+      document.getElementById('loginPage').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      document.getElementById('currentRoleText').textContent = 'Doctor Portal';
+      renderNavigation();
+      renderView('dashboard');
+      await loadUserData();
+    } else {
+      alert('Invalid username or password');
+    }
+  });
+};
+
+const loadSampleData = async () => {
+  const patients = await dbGetAll('patients');
+  if (patients.length > 0) return;
+  const samplePatients = [
+    { firstName: 'John', lastName: 'Smith', username: 'Patient1', password: 'Patient@123', email: 'john.smith@email.com', phone: '082 123 4567', idNumber: '8503155012089', dob: '1985-03-15', gender: 'Male', address: '123 Main St, Johannesburg, GP', postalCode: '2000', bloodType: 'O+', allergies: 'Penicillin', medicalAid: 'Discovery Health', medicalAidNumber: 'DH123456', chronicConditions: 'Hypertension, Type 2 Diabetes', currentMedications: 'Metformin 500mg, Lisinopril 10mg', medicalHistory: 'Appendectomy 2015', familyHistory: 'Father - Heart Disease', emergencyContactName: 'Jane Smith', emergencyContactPhone: '082 111 2222', emergencyContactRelation: 'Wife', status: 'pending', createdAt: new Date().toISOString() },
+    { firstName: 'Emily', lastName: 'Johnson', username: 'Patient2', password: 'Patient@123', email: 'emily.j@email.com', phone: '083 234 5678', idNumber: '9007220023098', dob: '1990-07-22', gender: 'Female', address: '456 Oak Ave, Cape Town, WC', postalCode: '8000', bloodType: 'A+', allergies: 'None', medicalAid: 'Momentum', medicalAidNumber: 'MM789012', chronicConditions: 'Asthma', currentMedications: 'Salbutamol inhaler', medicalHistory: 'Tonsillectomy 2005', familyHistory: 'Mother - Asthma, Grandmother - Breast Cancer', emergencyContactName: 'Robert Johnson', emergencyContactPhone: '083 333 4444', emergencyContactRelation: 'Father', status: 'approved', createdAt: new Date().toISOString() }
+  ];
+  const sampleDoctors = [
+    { firstName: 'Sarah', lastName: 'Wilson', username: 'Doc1', password: 'Doc@1234', email: 'sarah.w@medihub.com', phone: '011 123 4567', specialization: 'Cardiology', licenseNumber: 'MD12345', practiceNumber: 'PR67890', status: 'approved', createdAt: new Date().toISOString() },
+    { firstName: 'James', lastName: 'Miller', username: 'Doc2', password: 'Doc@1234', email: 'jmiller@medihub.com', phone: '021 234 5678', specialization: 'Neurology', licenseNumber: 'MD12346', practiceNumber: 'PR67891', status: 'pending', createdAt: new Date().toISOString() }
+  ];
+  const sampleNurses = [
+    { firstName: 'Lisa', lastName: 'Brown', username: 'Nurse1', password: 'Nurse@1234', email: 'lisa.b@medihub.com', phone: '010 987 6543', specialization: 'General Nursing', licenseNumber: 'RN45678', status: 'approved', createdAt: new Date().toISOString() },
+    { firstName: 'Michael', lastName: 'Davis', username: 'Nurse2', password: 'Nurse@1234', email: 'mdavis@medihub.com', phone: '021 876 5432', specialization: 'Paediatric Nursing', licenseNumber: 'RN45679', status: 'pending', createdAt: new Date().toISOString() }
+  ];
+  const sampleAdmins = [
+    { firstName: 'Kumalop', lastName: 'Admin', username: 'Kumalop', password: 'Paul12345', email: 'kumalop@medihub.com', phone: '010 123 4567', role: 'Super Admin', status: 'active', createdAt: new Date().toISOString() },
+    { firstName: 'Mathunywa', lastName: 'K', username: 'MathunywaK', password: 'Admin@1234', email: 'mathunywa@medihub.com', phone: '010 234 5678', role: 'Admin', status: 'active', createdAt: new Date().toISOString() },
+    { firstName: 'Micheals', lastName: 'N', username: 'MichealsN', password: 'Admin@1234', email: 'micheals@medihub.com', phone: '010 345 6789', role: 'Admin', status: 'active', createdAt: new Date().toISOString() }
+  ];
+  const sampleMedicalCodes = [
+    { code: 'A00', description: 'Cholera', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'A09', description: 'Diarrhoea and gastroenteritis of presumed infectious origin', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'B20', description: 'Human immunodeficiency virus [HIV] disease', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'C50', description: 'Malignant neoplasm of breast', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'D50', description: 'Iron deficiency anaemias', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'E11', description: 'Type 2 diabetes mellitus', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'E78', description: 'Disorders of lipoprotein metabolism and other lipidaemias', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'F32', description: 'Depressive episode', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'G40', description: 'Epilepsy', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'I10', description: 'Essential (primary) hypertension', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'I20', description: 'Angina pectoris', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'I25', description: 'Chronic ischaemic heart disease', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'I50', description: 'Heart failure', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'J00', description: 'Acute nasopharyngitis', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'J45', description: 'Asthma', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'J47', description: 'Chronic obstructive pulmonary disease', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'J15', description: 'Bacterial pneumonia, not elsewhere classified', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'K21', description: 'Gastro-oesophageal reflux disease', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'K29', description: 'Gastritis and duodenitis', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'M05', description: 'Rheumatoid arthritis', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'M54', description: 'Dorsalgia', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'M80', description: 'Vitamin D deficiency', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'N18', description: 'Chronic kidney disease', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'O00-O99', description: 'Pregnancy, childbirth and the puerperium', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'R05', description: 'Cough', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'R10', description: 'Abdominal and pelvic pain', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'R51', description: 'Headache', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'Z00', description: 'General adult medical examination', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'Z01', description: 'General medical examination', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'Z23', description: 'Encounter for immunization', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'Z51', description: 'Palliative care', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'Z71', description: 'Persons encountering health services for counselling', type: 'ICD-10', createdAt: new Date().toISOString() },
+    { code: 'Z76', description: 'Persons encountering health services in other circumstances', type: 'ICD-10', createdAt: new Date().toISOString() }
+  ];
+  const samplePayments = [
+    { patientId: 2, patientName: 'Emily Johnson', amount: 550.00, method: 'medical-aid', medicalAid: 'Momentum', reference: 'MN-2025-001', date: new Date(Date.now() - 86400000 * 7).toISOString(), status: 'completed' },
+    { patientId: 2, patientName: 'Emily Johnson', amount: 350.00, method: 'cash', reference: 'CASH-001', date: new Date(Date.now() - 86400000 * 5).toISOString(), status: 'completed' },
+    { patientId: 1, patientName: 'John Smith', amount: 800.00, method: 'card', reference: 'CRD-789', date: new Date(Date.now() - 86400000 * 3).toISOString(), status: 'completed' },
+    { patientId: 2, patientName: 'Emily Johnson', amount: 450.00, method: 'medical-aid', medicalAid: 'Momentum', reference: 'MN-2025-002', date: new Date(Date.now() - 86400000).toISOString(), status: 'pending' }
+  ];
+  const sampleExpenses = [
+    { description: 'Medical Supplies', category: 'supplies', amount: 2500.00, date: new Date(Date.now() - 86400000 * 10).toISOString(), paymentMethod: 'eft' },
+    { description: 'Staff Salaries', category: 'salaries', amount: 45000.00, date: new Date(Date.now() - 86400000 * 7).toISOString(), paymentMethod: 'eft' },
+    { description: 'Utilities', category: 'utilities', amount: 3500.00, date: new Date(Date.now() - 86400000 * 5).toISOString(), paymentMethod: 'debit-order' },
+    { description: 'Equipment Maintenance', category: 'maintenance', amount: 1800.00, date: new Date(Date.now() - 86400000 * 2).toISOString(), paymentMethod: 'card' }
+  ];
+  const sampleClaims = [
+    { patientId: 2, patientName: 'Emily Johnson', doctorId: 1, doctorName: 'Dr. Sarah Wilson', medicalAid: 'Momentum', memberNumber: 'MM789012', amount: 1200.00, serviceDate: new Date(Date.now() - 86400000 * 14).toISOString(), status: 'submitted', codes: ['Z00'] }
+  ];
+  const sampleSchedules = [
+    { doctorId: 1, doctorName: 'Dr. Sarah Wilson', day: 'Monday', startTime: '09:00', endTime: '17:00', available: true },
+    { doctorId: 1, doctorName: 'Dr. Sarah Wilson', day: 'Tuesday', startTime: '09:00', endTime: '17:00', available: true },
+    { doctorId: 1, doctorName: 'Dr. Sarah Wilson', day: 'Wednesday', startTime: '09:00', endTime: '15:00', available: true },
+    { doctorId: 1, doctorName: 'Dr. Sarah Wilson', day: 'Thursday', startTime: '09:00', endTime: '17:00', available: true },
+    { doctorId: 1, doctorName: 'Dr. Sarah Wilson', day: 'Friday', startTime: '09:00', endTime: '14:00', available: true },
+    { doctorId: 1, doctorName: 'Dr. Sarah Wilson', day: 'Saturday', startTime: '09:00', endTime: '12:00', available: false },
+    { doctorId: 1, doctorName: 'Dr. Sarah Wilson', day: 'Sunday', startTime: '00:00', endTime: '00:00', available: false }
+  ];
+  for (const p of samplePatients) await dbAdd('patients', p);
+  for (const d of sampleDoctors) await dbAdd('doctors', d);
+  for (const n of sampleNurses) await dbAdd('nurses', n);
+  for (const a of sampleAdmins) await dbAdd('admins', a);
+  for (const c of sampleMedicalCodes) await dbAdd('medicalCodes', c);
+  for (const p of samplePayments) await dbAdd('payments', p);
+  for (const e of sampleExpenses) await dbAdd('expenses', e);
+  for (const cl of sampleClaims) await dbAdd('claims', cl);
+  for (const s of sampleSchedules) await dbAdd('doctorSchedules', s);
+  const sampleProcedures = [
+    { name: 'General Consultation', category: 'Consultation', duration: '15 min', standard: true },
+    { name: 'Blood Pressure Check', category: 'Vitals', duration: '5 min', standard: true },
+    { name: 'Blood Glucose Test', category: 'Lab', duration: '5 min', standard: true },
+    { name: 'Urine Test', category: 'Lab', duration: '10 min', standard: true },
+    { name: 'HIV Test (Rapid)', category: 'Lab', duration: '15 min', standard: true },
+    { name: 'Pap Smear', category: 'Screening', duration: '20 min', standard: true },
+    { name: 'TB Screening', category: 'Screening', duration: '15 min', standard: true },
+    { name: 'Child Immunisation', category: 'Prevention', duration: '10 min', standard: true },
+    { name: 'Family Planning', category: 'Consultation', duration: '15 min', standard: true },
+    { name: 'Wound Dressing', category: 'Procedure', duration: '15 min', standard: true },
+    { name: 'ECG', category: 'Diagnostic', duration: '20 min', standard: true },
+  ];
+  for (const p of sampleProcedures) await dbAdd('procedures', p);
+  const samplePrescriptions = [
+    { patientId: 1, patientName: 'John Smith', doctorName: 'Dr. Sarah Wilson', medication: 'Metformin 500mg', dosage: '1 tablet twice daily', quantity: 60, repeats: 2, instructions: 'Take with meals', status: 'dispensed', prescribedDate: new Date(Date.now() - 86400000 * 5).toISOString(), notes: 'For diabetes management' },
+    { patientId: 2, patientName: 'Emily Johnson', doctorName: 'Dr. Sarah Wilson', medication: 'Salbutamol Inhaler 100mcg', dosage: '2 puffs as needed', quantity: 1, repeats: 3, instructions: 'Use when short of breath', status: 'active', prescribedDate: new Date(Date.now() - 86400000 * 2).toISOString(), notes: 'For asthma' },
+  ];
+  for (const p of samplePrescriptions) await dbAdd('prescriptions', p);
+  const sampleNotes = [
+    { patientId: 1, patientName: 'John Smith', doctorName: 'Dr. Sarah Wilson', note: 'Patient presenting with elevated BP 145/95. Advised lifestyle modifications.', type: 'consultation', createdAt: new Date(Date.now() - 86400000 * 5).toISOString() },
+    { patientId: 2, patientName: 'Emily Johnson', doctorName: 'Dr. Sarah Wilson', note: 'Asthma review. Patient reports good control. Continue current management.', type: 'follow-up', createdAt: new Date(Date.now() - 86400000 * 2).toISOString() },
+  ];
+  for (const n of sampleNotes) await dbAdd('doctorNotes', n);
+};
+
+const loadUserData = async () => {
+  let user = currentUser, roleText = '';
+  if (!user) {
+    const doctors = await dbGetAll('doctors');
+    user = doctors.find(d => d.status === 'approved') || doctors[0];
+  }
+  roleText = user ? 'Dr. ' + user.lastName : 'Doctor';
+  document.getElementById('userName').textContent = user ? 'Dr. ' + user.firstName + ' ' + user.lastName : 'Doctor User';
+  document.getElementById('userRoleText').textContent = roleText;
+  document.getElementById('userAvatar').textContent = user ? (user.firstName[0] + user.lastName[0]) : 'U';
+};
+
+const initApp = async () => {
+  await initDB();
+  await loadSampleData();
+};
+
+document.addEventListener('DOMContentLoaded', initApp);
+
+const getNavItems = () => {
+  if (currentRole === 'patient') return [
+    { id: 'dashboard', icon: 'fa-home', label: 'Dashboard' },
+    { id: 'my-records', icon: 'fa-file-medical', label: 'My Records' },
+    { id: 'my-medications', icon: 'fa-capsules', label: 'Medications' },
+    { id: 'my-appointments', icon: 'fa-calendar-alt', label: 'Appointments' },
+    { id: 'my-finances', icon: 'fa-money-bill-wave', label: 'My Finances' },
+    { id: 'find-doctors', icon: 'fa-search', label: 'Find Doctors' },
+    { id: 'chat', icon: 'fa-comments', label: 'Messages' }
+  ];
+  if (currentRole === 'nurse') return [
+    { id: 'dashboard', icon: 'fa-chart-line', label: 'Dashboard' },
+    { id: 'patients', icon: 'fa-user-injured', label: 'Patients' },
+    { id: 'appointments', icon: 'fa-calendar-check', label: 'Appointments' },
+    { id: 'vitals', icon: 'fa-heartbeat', label: 'Vitals & Triage' },
+    { id: 'medications', icon: 'fa-pills', label: 'Medications' },
+    { id: 'chat', icon: 'fa-comments', label: 'Messages' }
+  ];
+  if (currentRole === 'doctor') return [
+    { id: 'dashboard', icon: 'fa-chart-line', label: 'Dashboard' },
+    { id: 'patients', icon: 'fa-user-injured', label: 'Patients' },
+    { id: 'my-schedule', icon: 'fa-calendar', label: 'My Schedule' },
+    { id: 'prescriptions', icon: 'fa-prescription', label: 'Prescriptions' },
+    { id: 'doctor-notes', icon: 'fa-sticky-note', label: 'Doctor Notes' },
+    { id: 'procedures', icon: 'fa-clipboard-list', label: 'Procedures' },
+    { id: 'appointments', icon: 'fa-calendar-check', label: 'Appointments' },
+    { id: 'invoices', icon: 'fa-file-invoice', label: 'Invoices' },
+    { id: 'payments', icon: 'fa-credit-card', label: 'Payments' },
+    { id: 'medications', icon: 'fa-pills', label: 'Medications' },
+    { id: 'chat', icon: 'fa-comments', label: 'Messages' }
+  ];
+  if (currentRole === 'admin') return [
+    { id: 'dashboard', icon: 'fa-chart-line', label: 'Dashboard' },
+    { id: 'approvals', icon: 'fa-check-circle', label: 'Approvals' },
+    { id: 'patients', icon: 'fa-user-injured', label: 'Patients' },
+    { id: 'doctors', icon: 'fa-user-md', label: 'Doctors' },
+    { id: 'nurses', icon: 'fa-user-nurse', label: 'Nurses' },
+    { id: 'facilities', icon: 'fa-hospital', label: 'Facilities' },
+    { id: 'medical-codes', icon: 'fa-code', label: 'Medical Codes' },
+    { id: 'invoices', icon: 'fa-file-invoice', label: 'Invoices' },
+    { id: 'payments', icon: 'fa-credit-card', label: 'Payments' },
+    { id: 'expenses', icon: 'fa-receipt', label: 'Expenses' },
+    { id: 'claims', icon: 'fa-file-invoice-dollar', label: 'Claims' },
+    { id: 'reports', icon: 'fa-chart-bar', label: 'Reports & Audits' }
+  ];
+  return [];
+};
+const renderNavigation = () => {
+  const navItems = getNavItems();
+  const navHtml = navItems.map(item => `
+    <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-4 rounded-xl text-sm font-medium transition-all ${item.id === currentView ? 'active' : 'text-gray-700 hover:bg-gray-50'}" data-view="${item.id}" onclick="renderView('${item.id}')">
+      <i class="fas ${item.icon} w-6 text-lg"></i>
+      <span>${item.label}</span>
+    </a>
+  `).join('');
+  document.getElementById('sidebarNav').innerHTML = navHtml;
+  document.getElementById('mobileNav').innerHTML = navHtml;
+};
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount);
+};
+
+let currentModalSubmitHandler = null;
+const openModal = (title, formHtml, submitHandler) => {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalForm').innerHTML = formHtml;
+  currentModalSubmitHandler = submitHandler;
+  document.getElementById('modal').classList.remove('hidden');
+  document.getElementById('modal').classList.add('flex');
+};
+const closeModal = () => {
+  document.getElementById('modal').classList.add('hidden');
+  document.getElementById('modal').classList.remove('flex');
+  document.getElementById('modalForm').innerHTML = '';
+  currentModalSubmitHandler = null;
+  editingId = null;
+};
+
+const renderView = async (view) => {
+  currentView = view;
+  renderNavigation();
+  const contentArea = document.getElementById('contentArea');
+  switch(view) {
+    case 'dashboard': await renderDashboard(contentArea); break;
+    case 'approvals': await renderApprovals(contentArea); break;
+    case 'patients': await renderPatients(contentArea); break;
+    case 'doctors': await renderDoctors(contentArea); break;
+    case 'nurses': await renderNurses(contentArea); break;
+    case 'facilities': await renderFacilities(contentArea); break;
+    case 'medical-codes': await renderMedicalCodes(contentArea); break;
+    case 'payments': await renderPayments(contentArea); break;
+    case 'expenses': await renderExpenses(contentArea); break;
+    case 'claims': await renderClaims(contentArea); break;
+    case 'invoices': await renderInvoices(contentArea); break;
+    case 'reports': await renderReports(contentArea); break;
+    case 'my-records': await renderMyRecords(contentArea); break;
+    case 'my-medications': await renderMyMedications(contentArea); break;
+    case 'my-appointments': await renderMyAppointments(contentArea); break;
+    case 'my-finances': await renderMyFinances(contentArea); break;
+    case 'find-doctors': await renderFindDoctors(contentArea); break;
+    case 'my-schedule': await renderDoctorSchedule(contentArea); break;
+    case 'prescriptions': await renderPrescriptions(contentArea); break;
+    case 'doctor-notes': await renderDoctorNotes(contentArea); break;
+    case 'procedures': await renderProcedures(contentArea); break;
+    case 'appointments': await renderAppointmentsList(contentArea); break;
+    case 'medications': await renderMedicationsLog(contentArea); break;
+    case 'chat': await renderChat(contentArea); break;
+    case 'vitals': await renderVitals(contentArea); break;
+  }
+};
+
+const renderDashboard = async (container) => {
+  const patients = await dbGetAll('patients');
+  const doctors = await dbGetAll('doctors');
+  const nurses = await dbGetAll('nurses');
+  const appointments = await dbGetAll('appointments');
+  const payments = await dbGetAll('payments');
+  const expenses = await dbGetAll('expenses');
+  const pendingPatients = patients.filter(p => p.status === 'pending');
+  const pendingDoctors = doctors.filter(d => d.status === 'pending');
+  const pendingNurses = nurses.filter(n => n.status === 'pending');
+  const totalRevenue = payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0);
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  document.getElementById('pageTitle').textContent = 'Dashboard';
+  document.getElementById('pageSubtitle').textContent = 'Welcome back';
+  let statsHtml = '';
+  if (currentRole === 'admin') {
+    statsHtml = `
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div class="stat-card bg-white rounded-2xl border border-gray-200 p-6 transition-all">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-14 h-14 bg-gradient-to-br from-sky-100 to-sky-50 rounded-2xl flex items-center justify-center">
+              <i class="fas fa-user-injured text-2xl text-sky-600"></i>
+            </div>
+            <span class="text-xs font-semibold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">${pendingPatients.length} pending</span>
+          </div>
+          <h3 class="text-3xl font-bold text-gray-900 mb-1">${patients.length}</h3>
+          <p class="text-sm text-gray-500 font-medium">Total Patients</p>
+        </div>
+        <div class="stat-card bg-white rounded-2xl border border-gray-200 p-6 transition-all">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-14 h-14 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-2xl flex items-center justify-center">
+              <i class="fas fa-user-md text-2xl text-emerald-600"></i>
+            </div>
+            <span class="text-xs font-semibold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">${pendingDoctors.length} pending</span>
+          </div>
+          <h3 class="text-3xl font-bold text-gray-900 mb-1">${doctors.length}</h3>
+          <p class="text-sm text-gray-500 font-medium">Total Doctors</p>
+        </div>
+        <div class="stat-card bg-white rounded-2xl border border-gray-200 p-6 transition-all">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-14 h-14 bg-gradient-to-br from-amber-100 to-amber-50 rounded-2xl flex items-center justify-center">
+              <i class="fas fa-user-nurse text-2xl text-amber-600"></i>
+            </div>
+            <span class="text-xs font-semibold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">${pendingNurses.length} pending</span>
+          </div>
+          <h3 class="text-3xl font-bold text-gray-900 mb-1">${nurses.length}</h3>
+          <p class="text-sm text-gray-500 font-medium">Total Nurses</p>
+        </div>
+        <div class="stat-card bg-white rounded-2xl border border-gray-200 p-6 transition-all">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-14 h-14 bg-gradient-to-br from-purple-100 to-purple-50 rounded-2xl flex items-center justify-center">
+              <i class="fas fa-dollar-sign text-2xl text-purple-600"></i>
+            </div>
+          </div>
+          <h3 class="text-3xl font-bold text-gray-900 mb-1">${formatCurrency(totalRevenue)}</h3>
+          <p class="text-sm text-gray-500 font-medium">Total Revenue</p>
+        </div>
+        <div class="stat-card bg-white rounded-2xl border border-gray-200 p-6 transition-all">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-14 h-14 bg-gradient-to-br from-red-100 to-red-50 rounded-2xl flex items-center justify-center">
+              <i class="fas fa-receipt text-2xl text-red-600"></i>
+            </div>
+          </div>
+          <h3 class="text-3xl font-bold text-gray-900 mb-1">${formatCurrency(totalExpenses)}</h3>
+          <p class="text-sm text-gray-500 font-medium">Total Expenses</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl border border-gray-200 p-6">
+          <h4 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h4>
+          <div class="space-y-4">
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-xl">
+              <img src="https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=40&h=40&fit=crop&crop=face" class="w-10 h-10 rounded-full object-cover">
+              <div class="flex-1">
+                <p class="text-sm font-medium text-gray-900">New patient registered</p>
+                <p class="text-xs text-gray-500">2 minutes ago</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-xl">
+              <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=40&h=40&fit=crop&crop=face" class="w-10 h-10 rounded-full object-cover">
+              <div class="flex-1">
+                <p class="text-sm font-medium text-gray-900">Payment received</p>
+                <p class="text-xs text-gray-500">15 minutes ago</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-200 p-6">
+          <h4 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h4>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <button onclick="renderView('approvals')" class="p-4 bg-gradient-to-br from-sky-500 to-sky-600 text-white rounded-xl text-center hover:shadow-lg transition-all">
+              <i class="fas fa-check-circle text-2xl mb-2"></i>
+              <p class="text-sm font-semibold">Approvals</p>
+            </button>
+            <button onclick="renderView('payments')" class="p-4 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl text-center hover:shadow-lg transition-all">
+              <i class="fas fa-credit-card text-2xl mb-2"></i>
+              <p class="text-sm font-semibold">Payments</p>
+            </button>
+            <button onclick="renderView('reports')" class="p-4 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl text-center hover:shadow-lg transition-all">
+              <i class="fas fa-chart-bar text-2xl mb-2"></i>
+              <p class="text-sm font-semibold">Reports</p>
+            </button>
+            <button onclick="renderView('patients')" class="p-4 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl text-center hover:shadow-lg transition-all">
+              <i class="fas fa-user-injured text-2xl mb-2"></i>
+              <p class="text-sm font-semibold">Patients</p>
+            </button>
+            <button onclick="renderView('doctors')" class="p-4 bg-gradient-to-br from-emerald-600 to-emerald-700 text-white rounded-xl text-center hover:shadow-lg transition-all">
+              <i class="fas fa-user-md text-2xl mb-2"></i>
+              <p class="text-sm font-semibold">Doctors</p>
+            </button>
+            <button onclick="renderView('nurses')" class="p-4 bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-xl text-center hover:shadow-lg transition-all">
+              <i class="fas fa-user-nurse text-2xl mb-2"></i>
+              <p class="text-sm font-semibold">Nurses</p>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (currentRole === 'nurse') {
+    statsHtml = `
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+        <div class="stat-card bg-white rounded-2xl border border-gray-200 p-6 transition-all">
+          <div class="w-14 h-14 bg-gradient-to-br from-sky-100 to-sky-50 rounded-2xl flex items-center justify-center mb-4">
+            <i class="fas fa-user-injured text-2xl text-sky-600"></i>
+          </div>
+          <h3 class="text-3xl font-bold text-gray-900 mb-1">${patients.length}</h3>
+          <p class="text-sm text-gray-500 font-medium">Total Patients</p>
+        </div>
+        <div class="stat-card bg-white rounded-2xl border border-gray-200 p-6 transition-all">
+          <div class="w-14 h-14 bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl flex items-center justify-center mb-4">
+            <i class="fas fa-calendar-check text-2xl text-orange-600"></i>
+          </div>
+          <h3 class="text-3xl font-bold text-gray-900 mb-1">${appointments.length}</h3>
+          <p class="text-sm text-gray-500 font-medium">Appointments</p>
+        </div>
+        <div class="stat-card bg-white rounded-2xl border border-gray-200 p-6 transition-all">
+          <div class="w-14 h-14 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-2xl flex items-center justify-center mb-4">
+            <i class="fas fa-heartbeat text-2xl text-emerald-600"></i>
+          </div>
+          <h3 class="text-3xl font-bold text-gray-900 mb-1">12</h3>
+          <p class="text-sm text-gray-500 font-medium">Vitals Recorded</p>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl border border-gray-200 p-6">
+        <h4 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h4>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button onclick="renderView('vitals')" class="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200 rounded-xl text-center transition-all">
+            <i class="fas fa-heartbeat text-emerald-600 text-2xl mb-2"></i>
+            <p class="text-sm font-semibold text-gray-900">Record Vitals</p>
+          </button>
+          <button onclick="renderView('appointments')" class="p-4 bg-gradient-to-br from-sky-50 to-sky-100 hover:from-sky-100 hover:to-sky-200 rounded-xl text-center transition-all">
+            <i class="fas fa-calendar-check text-sky-600 text-2xl mb-2"></i>
+            <p class="text-sm font-semibold text-gray-900">View Appointments</p>
+          </button>
+          <button onclick="renderView('patients')" class="p-4 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-xl text-center transition-all">
+            <i class="fas fa-user-injured text-purple-600 text-2xl mb-2"></i>
+            <p class="text-sm font-semibold text-gray-900">Patients</p>
+          </button>
+          <button onclick="renderView('chat')" class="p-4 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-xl text-center transition-all">
+            <i class="fas fa-comments text-orange-600 text-2xl mb-2"></i>
+            <p class="text-sm font-semibold text-gray-900">Messages</p>
+          </button>
+        </div>
+      </div>
+    `;
+  } else if (currentRole === 'doctor') {
+    statsHtml = `
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+        <div class="stat-card bg-white rounded-2xl border border-gray-200 p-6 transition-all">
+          <div class="w-14 h-14 bg-gradient-to-br from-sky-100 to-sky-50 rounded-2xl flex items-center justify-center mb-4">
+            <i class="fas fa-user-injured text-2xl text-sky-600"></i>
+          </div>
+          <h3 class="text-3xl font-bold text-gray-900 mb-1">${patients.length}</h3>
+          <p class="text-sm text-gray-500 font-medium">Total Patients</p>
+        </div>
+        <div class="stat-card bg-white rounded-2xl border border-gray-200 p-6 transition-all">
+          <div class="w-14 h-14 bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl flex items-center justify-center mb-4">
+            <i class="fas fa-calendar-check text-2xl text-orange-600"></i>
+          </div>
+          <h3 class="text-3xl font-bold text-gray-900 mb-1">${appointments.length}</h3>
+          <p class="text-sm text-gray-500 font-medium">Appointments</p>
+        </div>
+        <div class="stat-card bg-white rounded-2xl border border-gray-200 p-6 transition-all">
+          <div class="w-14 h-14 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-2xl flex items-center justify-center mb-4">
+            <i class="fas fa-pills text-2xl text-emerald-600"></i>
+          </div>
+          <h3 class="text-3xl font-bold text-gray-900 mb-1">24</h3>
+          <p class="text-sm text-gray-500 font-medium">Prescriptions</p>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl border border-gray-200 p-6">
+        <h4 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h4>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button onclick="renderView('my-schedule')" class="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200 rounded-xl text-center transition-all">
+            <i class="fas fa-calendar text-emerald-600 text-2xl mb-2"></i>
+            <p class="text-sm font-semibold text-gray-900">Manage Schedule</p>
+          </button>
+          <button onclick="renderView('appointments')" class="p-4 bg-gradient-to-br from-sky-50 to-sky-100 hover:from-sky-100 hover:to-sky-200 rounded-xl text-center transition-all">
+            <i class="fas fa-calendar-check text-sky-600 text-2xl mb-2"></i>
+            <p class="text-sm font-semibold text-gray-900">View Appointments</p>
+          </button>
+          <button onclick="renderView('patients')" class="p-4 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-xl text-center transition-all">
+            <i class="fas fa-user-injured text-purple-600 text-2xl mb-2"></i>
+            <p class="text-sm font-semibold text-gray-900">Patients</p>
+          </button>
+          <button onclick="renderView('chat')" class="p-4 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-xl text-center transition-all">
+            <i class="fas fa-comments text-orange-600 text-2xl mb-2"></i>
+            <p class="text-sm font-semibold text-gray-900">Messages</p>
+          </button>
+        </div>
+      </div>
+    `;
+  } else {
+    const patientPayments = payments.filter(p => p.patientId === 2);
+    statsHtml = `
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+        <div class="stat-card bg-white rounded-2xl border border-gray-200 p-6 transition-all">
+          <div class="w-14 h-14 bg-gradient-to-br from-sky-100 to-sky-50 rounded-2xl flex items-center justify-center mb-4">
+            <i class="fas fa-calendar-check text-2xl text-sky-600"></i>
+          </div>
+          <h3 class="text-3xl font-bold text-gray-900 mb-1">${appointments.length}</h3>
+          <p class="text-sm text-gray-500 font-medium">Appointments</p>
+        </div>
+        <div class="stat-card bg-white rounded-2xl border border-gray-200 p-6 transition-all">
+          <div class="w-14 h-14 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-2xl flex items-center justify-center mb-4">
+            <i class="fas fa-receipt text-2xl text-emerald-600"></i>
+          </div>
+          <h3 class="text-3xl font-bold text-gray-900 mb-1">${patientPayments.length}</h3>
+          <p class="text-sm text-gray-500 font-medium">Payments</p>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl border border-gray-200 p-6">
+        <h4 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h4>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <button onclick="renderView('find-doctors')" class="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200 rounded-xl text-center transition-all">
+            <i class="fas fa-search text-emerald-600 text-2xl mb-2"></i>
+            <p class="text-sm font-semibold text-gray-900">Find Doctors</p>
+          </button>
+          <button onclick="renderView('my-appointments')" class="p-4 bg-gradient-to-br from-sky-50 to-sky-100 hover:from-sky-100 hover:to-sky-200 rounded-xl text-center transition-all">
+            <i class="fas fa-calendar-alt text-sky-600 text-2xl mb-2"></i>
+            <p class="text-sm font-semibold text-gray-900">Book Appointment</p>
+          </button>
+          <button onclick="renderView('my-finances')" class="p-4 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-xl text-center transition-all">
+            <i class="fas fa-money-bill-wave text-purple-600 text-2xl mb-2"></i>
+            <p class="text-sm font-semibold text-gray-900">My Finances</p>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = `<div class="fade-in">${statsHtml}</div>`;
+};
+
+const addAuditLog = async (action) => {
+  await dbAdd('auditLogs', { action, timestamp: new Date().toISOString(), userId: 1 });
+};
+
+const approveUser = async (store, id) => {
+  const user = await dbGetById(store, id);
+  user.status = 'approved';
+  await dbUpdate(store, user);
+  await addAuditLog(`Approved ${store.slice(0, -1)}: ${user.firstName} ${user.lastName}`);
+  renderView('approvals');
+};
+
+const renderApprovals = async (container) => {
+  const patients = await dbGetAll('patients');
+  const doctors = await dbGetAll('doctors');
+  const nurses = await dbGetAll('nurses');
+  const pendingPatients = patients.filter(p => p.status === 'pending');
+  const pendingDoctors = doctors.filter(d => d.status === 'pending');
+  const pendingNurses = nurses.filter(n => n.status === 'pending');
+  document.getElementById('pageTitle').textContent = 'Approvals';
+  document.getElementById('pageSubtitle').textContent = 'Approve new patients, doctors, and nurses';
+  container.innerHTML = `
+    <div class="fade-in space-y-8">
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+          <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <i class="fas fa-user-injured text-sky-600"></i>
+            Pending Patients <span class="text-sm font-normal text-orange-600 bg-orange-50 px-3 py-1 rounded-full ml-3">${pendingPatients.length}</span>
+          </h3>
+        </div>
+        <div class="p-6">
+          ${pendingPatients.length === 0 ? '<p class="text-gray-500 text-center py-12">No pending patients</p>' : `
+            <div class="space-y-4">
+              ${pendingPatients.map(p => `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-gray-50 rounded-2xl border border-gray-200">
+                  <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-gradient-to-br from-sky-500 to-sky-600 rounded-full flex items-center justify-center text-white font-bold text-xl">${p.firstName[0]}${p.lastName[0]}</div>
+                    <div>
+                      <p class="font-bold text-lg text-gray-900">${p.firstName} ${p.lastName}</p>
+                      <p class="text-sm text-gray-500">${p.email} • ${p.phone}</p>
+                      <p class="text-xs text-gray-400">ID: ${p.idNumber}</p>
+                    </div>
+                  </div>
+                  <div class="flex gap-3">
+                    <button onclick="approveUser('patients', ${p.id})" class="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all shadow-lg hover:shadow-xl">
+                      <i class="fas fa-check mr-2"></i>Approve
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+          <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <i class="fas fa-user-md text-emerald-600"></i>
+            Pending Doctors <span class="text-sm font-normal text-orange-600 bg-orange-50 px-3 py-1 rounded-full ml-3">${pendingDoctors.length}</span>
+          </h3>
+        </div>
+        <div class="p-6">
+          ${pendingDoctors.length === 0 ? '<p class="text-gray-500 text-center py-12">No pending doctors</p>' : `
+            <div class="space-y-4">
+              ${pendingDoctors.map(d => `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-gray-50 rounded-2xl border border-gray-200">
+                  <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-xl">${d.firstName[0]}${d.lastName[0]}</div>
+                    <div>
+                      <p class="font-bold text-lg text-gray-900">Dr. ${d.firstName} ${d.lastName}</p>
+                      <p class="text-sm text-gray-500">${d.email} • ${d.phone}</p>
+                      <p class="text-xs text-gray-400">Specialization: ${d.specialization} • License: ${d.licenseNumber}</p>
+                    </div>
+                  </div>
+                  <div class="flex gap-3">
+                    <button onclick="approveUser('doctors', ${d.id})" class="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all shadow-lg hover:shadow-xl">
+                      <i class="fas fa-check mr-2"></i>Approve
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+          <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <i class="fas fa-user-nurse text-amber-600"></i>
+            Pending Nurses <span class="text-sm font-normal text-orange-600 bg-orange-50 px-3 py-1 rounded-full ml-3">${pendingNurses.length}</span>
+          </h3>
+        </div>
+        <div class="p-6">
+          ${pendingNurses.length === 0 ? '<p class="text-gray-500 text-center py-12">No pending nurses</p>' : `
+            <div class="space-y-4">
+              ${pendingNurses.map(n => `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-gray-50 rounded-2xl border border-gray-200">
+                  <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xl">${n.firstName[0]}${n.lastName[0]}</div>
+                    <div>
+                      <p class="font-bold text-lg text-gray-900">${n.firstName} ${n.lastName}</p>
+                      <p class="text-sm text-gray-500">${n.email} • ${n.phone}</p>
+                      <p class="text-xs text-gray-400">Specialization: ${n.specialization} • License: ${n.licenseNumber}</p>
+                    </div>
+                  </div>
+                  <div class="flex gap-3">
+                    <button onclick="approveUser('nurses', ${n.id})" class="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all shadow-lg hover:shadow-xl">
+                      <i class="fas fa-check mr-2"></i>Approve
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const openAddPatientModal = () => {
+  const formHtml = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">First Name *</label>
+        <input type="text" name="firstName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Last Name *</label>
+        <input type="text" name="lastName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
+        <input type="email" name="email" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
+        <input type="text" name="phone" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">ID Number *</label>
+        <input type="text" name="idNumber" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Date of Birth</label>
+        <input type="date" name="dob" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Gender</label>
+        <select name="gender" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+          <option value="">Select Gender</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Blood Type</label>
+        <select name="bloodType" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+          <option value="">Select Blood Type</option>
+          <option value="A+">A+</option><option value="A-">A-</option><option value="B+">B+</option><option value="B-">B-</option>
+          <option value="AB+">AB+</option><option value="AB-">AB-</option><option value="O+">O+</option><option value="O-">O-</option>
+        </select>
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Address</label>
+        <input type="text" name="address" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Postal Code</label>
+        <input type="text" name="postalCode" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Allergies</label>
+        <input type="text" name="allergies" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Medical Aid</label>
+        <input type="text" name="medicalAid" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Medical Aid Number</label>
+        <input type="text" name="medicalAidNumber" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+      <div class="mt-6 mb-2"><h4 class="text-sm font-bold text-sky-600 uppercase tracking-wide">Login Credentials</h4></div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Username *</label>
+        <input type="text" name="username" required placeholder="e.g. Patient3" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Password *</label>
+        <input type="password" name="password" required placeholder="Min 6 characters" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+      <div class="mt-6 mb-2 md:col-span-2"><h4 class="text-sm font-bold text-sky-600 uppercase tracking-wide">Medical Information</h4></div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Chronic Conditions</label>
+        <textarea name="chronicConditions" rows="2" placeholder="e.g. Diabetes Type 2, Hypertension" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none resize-none"></textarea>
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Current Medications</label>
+        <textarea name="currentMedications" rows="2" placeholder="e.g. Metformin 500mg, Lisinopril 10mg" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none resize-none"></textarea>
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Medical History / Previous Surgeries</label>
+        <textarea name="medicalHistory" rows="2" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none resize-none"></textarea>
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Family Medical History</label>
+        <textarea name="familyHistory" rows="2" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none resize-none"></textarea>
+      </div>
+      <div class="mt-6 mb-2 md:col-span-2"><h4 class="text-sm font-bold text-sky-600 uppercase tracking-wide">Emergency Contact</h4></div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Emergency Contact Name</label>
+        <input type="text" name="emergencyContactName" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Emergency Contact Phone</label>
+        <input type="text" name="emergencyContactPhone" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Emergency Contact Relationship</label>
+        <input type="text" name="emergencyContactRelation" placeholder="e.g. Spouse, Parent" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+      </div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-all">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">Save</button>
+    </div>
+  `;
+  openModal('Add New Patient', formHtml, async (form) => {
+    const patientData = {
+      firstName: form.firstName.value, lastName: form.lastName.value, email: form.email.value, phone: form.phone.value || '', idNumber: form.idNumber.value,
+      dob: form.dob.value || '', gender: form.gender.value || '', address: form.address.value || '', postalCode: form.postalCode.value || '',
+      bloodType: form.bloodType.value || '', allergies: form.allergies.value || '', medicalAid: form.medicalAid.value || '',
+      medicalAidNumber: form.medicalAidNumber.value || '', username: form.username.value, password: form.password.value,
+      chronicConditions: form.chronicConditions.value || '', currentMedications: form.currentMedications.value || '',
+      medicalHistory: form.medicalHistory.value || '', familyHistory: form.familyHistory.value || '',
+      emergencyContactName: form.emergencyContactName.value || '', emergencyContactPhone: form.emergencyContactPhone.value || '',
+      emergencyContactRelation: form.emergencyContactRelation.value || '',
+      status: 'pending', createdAt: new Date().toISOString()
+    };
+    await dbAdd('patients', patientData);
+    await addAuditLog(`Added new patient: ${patientData.firstName} ${patientData.lastName}`);
+    renderView('patients');
+  });
+};
+
+const renderPatients = async (container) => {
+  const patients = await dbGetAll('patients');
+  document.getElementById('pageTitle').textContent = 'Patients';
+  document.getElementById('pageSubtitle').textContent = 'Manage all patients';
+  container.innerHTML = `
+    <div class="fade-in">
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 class="text-xl font-bold text-gray-900">Patients List</h3>
+          ${currentRole === 'admin' ? `<button onclick="openAddPatientModal()" class="bg-gradient-to-r from-sky-500 to-sky-600 hover:shadow-lg text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+            <i class="fas fa-plus"></i>Add Patient
+          </button>` : ''}
+        </div>
+        <div class="p-6 overflow-x-auto">
+          ${patients.length === 0 ? '<p class="text-gray-500 text-center py-12">No patients yet</p>' : `
+            <table class="w-full">
+              <thead class="bg-gray-50 text-xs font-semibold text-gray-600 uppercase">
+                <tr>
+                  <th class="px-6 py-4 text-left">Patient</th>
+                  <th class="px-6 py-4 text-left">Email</th>
+                  <th class="px-6 py-4 text-left">Phone</th>
+                  <th class="px-6 py-4 text-left">Status</th>
+                  <th class="px-6 py-4 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 text-sm">
+                ${patients.map(p => `
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-sky-500 to-sky-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">${p.firstName[0]}${p.lastName[0]}</div>
+                        <span class="font-semibold text-gray-900">${p.firstName} ${p.lastName}</span>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 text-gray-600">${p.email}</td>
+                    <td class="px-6 py-4 text-gray-600">${p.phone}</td>
+                    <td class="px-6 py-4">
+                      <span class="status-${p.status} px-3 py-1 rounded-full text-xs font-semibold capitalize">${p.status}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                      <div class="flex items-center gap-2">
+                        <button class="text-sky-600 hover:text-sky-700 p-2 hover:bg-sky-50 rounded-lg"><i class="fas fa-eye text-lg"></i></button>
+                      </div>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const openAddDoctorModal = () => {
+  const formHtml = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">First Name *</label><input type="text" name="firstName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Last Name *</label><input type="text" name="lastName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Email *</label><input type="email" name="email" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Phone</label><input type="text" name="phone" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Specialization *</label><input type="text" name="specialization" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">License Number *</label><input type="text" name="licenseNumber" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div class="md:col-span-2"><label class="block text-sm font-semibold text-gray-700 mb-2">Practice Number</label><input type="text" name="practiceNumber" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div class="md:col-span-2"><h4 class="text-sm font-bold text-gray-500 uppercase tracking-wider">Login Credentials</h4></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Username *</label><input type="text" name="username" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Password *</label><input type="password" name="password" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div class="md:col-span-2"><h4 class="text-sm font-bold text-gray-500 uppercase tracking-wider">Professional Details</h4></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Certificate Number</label><input type="text" name="certificateNumber" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">HPCSA Registration</label><input type="text" name="hpcsaRegistration" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-all">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">Save</button>
+    </div>
+  `;
+  openModal('Add New Doctor', formHtml, async (form) => {
+    const doctorData = {
+      firstName: form.firstName.value, lastName: form.lastName.value, email: form.email.value, phone: form.phone.value || '',
+      specialization: form.specialization.value, licenseNumber: form.licenseNumber.value, practiceNumber: form.practiceNumber.value || '',
+      username: form.username.value, password: form.password.value,
+      certificateNumber: form.certificateNumber.value || '', hpcsaRegistration: form.hpcsaRegistration.value || '',
+      status: 'pending', createdAt: new Date().toISOString()
+    };
+    await dbAdd('doctors', doctorData);
+    await addAuditLog(`Added new doctor: Dr. ${doctorData.firstName} ${doctorData.lastName}`);
+    renderView('doctors');
+  });
+};
+
+const renderDoctors = async (container) => {
+  const doctors = await dbGetAll('doctors');
+  document.getElementById('pageTitle').textContent = 'Doctors';
+  document.getElementById('pageSubtitle').textContent = 'Manage all doctors';
+  container.innerHTML = `
+    <div class="fade-in">
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 class="text-xl font-bold text-gray-900">Doctors List</h3>
+          ${currentRole === 'admin' ? `<button onclick="openAddDoctorModal()" class="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:shadow-lg text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+            <i class="fas fa-plus"></i>Add Doctor
+          </button>` : ''}
+        </div>
+        <div class="p-6 overflow-x-auto">
+          ${doctors.length === 0 ? '<p class="text-gray-500 text-center py-12">No doctors yet</p>' : `
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              ${doctors.map(d => `
+                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+                  <div class="flex items-center gap-4 mb-4">
+                    <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face" class="w-16 h-16 rounded-2xl object-cover">
+                    <div>
+                      <h4 class="font-bold text-lg text-gray-900">Dr. ${d.firstName} ${d.lastName}</h4>
+                      <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">${d.specialization}</span>
+                    </div>
+                  </div>
+                  <div class="space-y-2 text-sm text-gray-600 mb-4">
+                    <p class="flex items-center gap-2"><i class="fas fa-envelope"></i> ${d.email}</p>
+                    <p class="flex items-center gap-2"><i class="fas fa-phone"></i> ${d.phone}</p>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="status-${d.status} px-3 py-1 rounded-full text-xs font-semibold capitalize">${d.status}</span>
+                    <button class="text-sky-600 hover:text-sky-700 font-semibold text-sm">View Profile</button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const openAddClinicModal = () => {
+  const formHtml = `
+    <div class="grid grid-cols-1 gap-5">
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Clinic Name *</label><input type="text" name="name" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Address</label><input type="text" name="address" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Phone</label><input type="text" name="phone" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-all">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">Add</button>
+    </div>
+  `;
+  openModal('Add Clinic', formHtml, async (form) => {
+    const clinicData = { name: form.name.value, address: form.address.value || '', phone: form.phone.value || '', createdAt: new Date().toISOString() };
+    await dbAdd('clinics', clinicData);
+    await addAuditLog(`Added clinic: ${clinicData.name}`);
+    renderView('facilities');
+  });
+};
+const openAddHospitalModal = () => {
+  const formHtml = `
+    <div class="grid grid-cols-1 gap-5">
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Hospital Name *</label><input type="text" name="name" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Address</label><input type="text" name="address" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Phone</label><input type="text" name="phone" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"></div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-all">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">Add</button>
+    </div>
+  `;
+  openModal('Add Hospital', formHtml, async (form) => {
+    const hospitalData = { name: form.name.value, address: form.address.value || '', phone: form.phone.value || '', createdAt: new Date().toISOString() };
+    await dbAdd('hospitals', hospitalData);
+    await addAuditLog(`Added hospital: ${hospitalData.name}`);
+    renderView('facilities');
+  });
+};
+
+const renderFacilities = async (container) => {
+  const clinics = await dbGetAll('clinics');
+  const hospitals = await dbGetAll('hospitals');
+  document.getElementById('pageTitle').textContent = 'Facilities';
+  document.getElementById('pageSubtitle').textContent = 'Manage clinics and hospitals';
+  container.innerHTML = `
+    <div class="fade-in space-y-8">
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2"><i class="fas fa-clinic-medical text-sky-600"></i>Clinics</h3>
+          <button onclick="openAddClinicModal()" class="bg-gradient-to-r from-sky-500 to-sky-600 hover:shadow-lg text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+            <i class="fas fa-plus"></i>Add Clinic
+          </button>
+        </div>
+        <div class="p-6">
+          ${clinics.length === 0 ? '<p class="text-gray-500 text-center py-12">No clinics yet</p>' : `
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              ${clinics.map(c => `
+                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+                  <div class="w-12 h-12 bg-gradient-to-br from-sky-500 to-sky-600 rounded-xl flex items-center justify-center mb-4">
+                    <i class="fas fa-clinic-medical text-white text-2xl"></i>
+                  </div>
+                  <h4 class="font-bold text-lg text-gray-900 mb-2">${c.name}</h4>
+                  ${c.address ? `<p class="text-sm text-gray-600 mb-2 flex items-center gap-2"><i class="fas fa-map-marker-alt text-sky-500"></i>${c.address}</p>` : ''}
+                  ${c.phone ? `<p class="text-sm text-gray-600 flex items-center gap-2"><i class="fas fa-phone text-sky-500"></i>${c.phone}</p>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2"><i class="fas fa-hospital text-purple-600"></i>Hospitals</h3>
+          <button onclick="openAddHospitalModal()" class="bg-gradient-to-r from-purple-500 to-purple-600 hover:shadow-lg text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+            <i class="fas fa-plus"></i>Add Hospital
+          </button>
+        </div>
+        <div class="p-6">
+          ${hospitals.length === 0 ? '<p class="text-gray-500 text-center py-12">No hospitals yet</p>' : `
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              ${hospitals.map(h => `
+                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+                  <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
+                    <i class="fas fa-hospital text-white text-2xl"></i>
+                  </div>
+                  <h4 class="font-bold text-lg text-gray-900 mb-2">${h.name}</h4>
+                  ${h.address ? `<p class="text-sm text-gray-600 mb-2 flex items-center gap-2"><i class="fas fa-map-marker-alt text-purple-500"></i>${h.address}</p>` : ''}
+                  ${h.phone ? `<p class="text-sm text-gray-600 flex items-center gap-2"><i class="fas fa-phone text-purple-500"></i>${h.phone}</p>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const openAddMedicalCodeModal = () => {
+  const formHtml = `
+    <div class="grid grid-cols-1 gap-5">
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Code *</label><input type="text" name="code" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Description *</label><input type="text" name="description" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Type</label>
+        <select name="type" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none">
+          <option value="ICD-10">ICD-10</option><option value="CPT">CPT</option><option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-all">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">Save</button>
+    </div>
+  `;
+  openModal('Add Medical Code', formHtml, async (form) => {
+    const codeData = { code: form.code.value, description: form.description.value, type: form.type.value, createdAt: new Date().toISOString() };
+    await dbAdd('medicalCodes', codeData);
+    await addAuditLog(`Added medical code: ${codeData.code}`);
+    renderView('medical-codes');
+  });
+};
+
+const renderMedicalCodes = async (container) => {
+  const codes = await dbGetAll('medicalCodes');
+  document.getElementById('pageTitle').textContent = 'Medical Codes';
+  document.getElementById('pageSubtitle').textContent = 'Manage ICD-10 and other medical codes';
+  container.innerHTML = `
+    <div class="fade-in">
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 class="text-xl font-bold text-gray-900">Medical Codes</h3>
+          <button onclick="openAddMedicalCodeModal()" class="bg-gradient-to-r from-purple-500 to-purple-600 hover:shadow-lg text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+            <i class="fas fa-plus"></i>Add Code
+          </button>
+        </div>
+        <div class="p-6 overflow-x-auto">
+          ${codes.length === 0 ? '<p class="text-gray-500 text-center py-12">No codes yet</p>' : `
+            <table class="w-full">
+              <thead class="bg-gray-50 text-xs font-semibold text-gray-600 uppercase">
+                <tr><th class="px-6 py-4 text-left">Code</th><th class="px-6 py-4 text-left">Description</th><th class="px-6 py-4 text-left">Type</th></tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 text-sm">
+                ${codes.map(c => `
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 font-bold text-purple-600">${c.code}</td>
+                    <td class="px-6 py-4 text-gray-900">${c.description}</td>
+                    <td class="px-6 py-4"><span class="px-3 py-1 bg-gray-100 rounded-full text-xs font-semibold">${c.type}</span></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const openRecordPaymentModal = () => {
+  const formHtml = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Patient Name *</label><input type="text" name="patientName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Patient ID</label><input type="number" name="patientId" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Amount *</label><input type="number" step="0.01" name="amount" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Payment Method *</label>
+        <select name="method" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+          <option value="cash">Cash</option><option value="card">Card</option><option value="medical-aid">Medical Aid</option><option value="eft">EFT</option><option value="insurance-claim">Insurance Claim</option>
+        </select>
+      </div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Reference</label><input type="text" name="reference" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Medical Aid (if applicable)</label><input type="text" name="medicalAid" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+        <select name="status" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+          <option value="pending">Pending</option><option value="completed">Completed</option>
+        </select>
+      </div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-all">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">Save</button>
+    </div>
+  `;
+  openModal('Record Payment', formHtml, async (form) => {
+    const paymentData = {
+      patientName: form.patientName.value, patientId: form.patientId.value ? parseInt(form.patientId.value) : null, amount: parseFloat(form.amount.value),
+      method: form.method.value, reference: form.reference.value || '', medicalAid: form.medicalAid.value || '', status: form.status.value, date: new Date().toISOString()
+    };
+    await dbAdd('payments', paymentData);
+    await addAuditLog(`Recorded payment from ${paymentData.patientName}: ${formatCurrency(paymentData.amount)}`);
+    renderView('payments');
+  });
+};
+
+const renderPayments = async (container) => {
+  const payments = await dbGetAll('payments');
+  const totalRevenue = payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0);
+  const byMethod = {
+    'medical-aid': payments.filter(p => p.method === 'medical-aid').reduce((sum, p) => sum + p.amount, 0),
+    'cash': payments.filter(p => p.method === 'cash').reduce((sum, p) => sum + p.amount, 0),
+    'card': payments.filter(p => p.method === 'card').reduce((sum, p) => sum + p.amount, 0)
+  };
+  document.getElementById('pageTitle').textContent = 'Payments';
+  document.getElementById('pageSubtitle').textContent = 'Track all patient payments';
+  container.innerHTML = `
+    <div class="fade-in space-y-8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="stat-card bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white transition-all">
+          <p class="text-sm opacity-80 mb-2 font-medium">Total Revenue</p>
+          <h3 class="text-3xl font-bold">${formatCurrency(totalRevenue)}</h3>
+        </div>
+        <div class="stat-card bg-gradient-to-br from-sky-500 to-sky-600 rounded-2xl p-6 text-white transition-all">
+          <p class="text-sm opacity-80 mb-2 font-medium">Medical Aid</p>
+          <h3 class="text-3xl font-bold">${formatCurrency(byMethod['medical-aid'])}</h3>
+        </div>
+        <div class="stat-card bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white transition-all">
+          <p class="text-sm opacity-80 mb-2 font-medium">Cash</p>
+          <h3 class="text-3xl font-bold">${formatCurrency(byMethod['cash'])}</h3>
+        </div>
+        <div class="stat-card bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white transition-all">
+          <p class="text-sm opacity-80 mb-2 font-medium">Card</p>
+          <h3 class="text-3xl font-bold">${formatCurrency(byMethod['card'])}</h3>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 class="text-xl font-bold text-gray-900">All Payments</h3>
+          <div class="flex gap-3">
+            <button onclick="openCreateInvoiceModal()" class="bg-gradient-to-r from-purple-500 to-purple-600 hover:shadow-lg text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+              <i class="fas fa-plus"></i>Create Invoice
+            </button>
+            <button onclick="openRecordPaymentModal()" class="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:shadow-lg text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+              <i class="fas fa-plus"></i>Record Payment
+            </button>
+          </div>
+        </div>
+        <div class="p-6 overflow-x-auto">
+          ${payments.length === 0 ? '<p class="text-gray-500 text-center py-12">No payments yet</p>' : `
+            <table class="w-full">
+              <thead class="bg-gray-50 text-xs font-semibold text-gray-600 uppercase">
+                <tr><th class="px-6 py-4 text-left">Date</th><th class="px-6 py-4 text-left">Patient</th><th class="px-6 py-4 text-left">Method</th><th class="px-6 py-4 text-left">Reference</th><th class="px-6 py-4 text-left">Amount</th><th class="px-6 py-4 text-left">Status</th></tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 text-sm">
+                ${payments.map(p => `
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 text-gray-600">${new Date(p.date).toLocaleDateString()}</td>
+                    <td class="px-6 py-4 font-semibold text-gray-900">${p.patientName}</td>
+                    <td class="px-6 py-4"><span class="px-3 py-1 bg-gray-100 rounded-full text-xs font-semibold capitalize">${p.method}</span></td>
+                    <td class="px-6 py-4 text-gray-600">${p.reference}</td>
+                    <td class="px-6 py-4 font-bold text-gray-900">${formatCurrency(p.amount)}</td>
+                    <td class="px-6 py-4"><span class="status-${p.status} px-3 py-1 rounded-full text-xs font-semibold capitalize">${p.status}</span></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const openCreateInvoiceModal = () => {
+  const formHtml = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Patient Name *</label><input type="text" name="patientName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Patient ID</label><input type="number" name="patientId" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Doctor Name</label><input type="text" name="doctorName" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Description *</label><input type="text" name="description" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Consultation, Procedure"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Amount *</label><input type="number" step="0.01" name="amount" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Tax (%)</label><input type="number" step="0.01" name="tax" value="0" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Due Date *</label><input type="date" name="dueDate" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+        <select name="status" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+          <option value="unpaid">Unpaid</option><option value="paid">Paid</option><option value="overdue">Overdue</option>
+        </select>
+      </div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-all">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">Create Invoice</button>
+    </div>
+  `;
+  openModal('Create Invoice', formHtml, async (form) => {
+    const amount = parseFloat(form.amount.value);
+    const tax = parseFloat(form.tax.value) || 0;
+    const taxAmount = amount * (tax / 100);
+    const invoiceData = {
+      patientName: form.patientName.value, patientId: form.patientId.value ? parseInt(form.patientId.value) : null,
+      doctorName: form.doctorName.value || '', description: form.description.value, amount, tax, total: amount + taxAmount,
+      dueDate: form.dueDate.value, status: form.status.value, createdAt: new Date().toISOString()
+    };
+    await dbAdd('invoices', invoiceData);
+    await addAuditLog(`Created invoice for ${invoiceData.patientName}: ${formatCurrency(invoiceData.total)}`);
+    renderView('invoices');
+  });
+};
+
+const renderInvoices = async (container) => {
+  const invoices = await dbGetAll('invoices');
+  const totalUnpaid = invoices.filter(i => i.status === 'unpaid').reduce((s, i) => s + i.total, 0);
+  const totalPaid = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.total, 0);
+  const totalOverdue = invoices.filter(i => i.status === 'overdue').reduce((s, i) => s + i.total, 0);
+  document.getElementById('pageTitle').textContent = 'Invoices';
+  document.getElementById('pageSubtitle').textContent = 'Manage patient invoices';
+  container.innerHTML = `
+    <div class="fade-in space-y-8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="stat-card bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white transition-all">
+          <p class="text-sm opacity-80 mb-2 font-medium">Total Invoices</p>
+          <h3 class="text-3xl font-bold">${invoices.length}</h3>
+        </div>
+        <div class="stat-card bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white transition-all">
+          <p class="text-sm opacity-80 mb-2 font-medium">Total Paid</p>
+          <h3 class="text-3xl font-bold">${formatCurrency(totalPaid)}</h3>
+        </div>
+        <div class="stat-card bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-6 text-white transition-all">
+          <p class="text-sm opacity-80 mb-2 font-medium">Unpaid</p>
+          <h3 class="text-3xl font-bold">${formatCurrency(totalUnpaid)}</h3>
+        </div>
+        <div class="stat-card bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-6 text-white transition-all">
+          <p class="text-sm opacity-80 mb-2 font-medium">Overdue</p>
+          <h3 class="text-3xl font-bold">${formatCurrency(totalOverdue)}</h3>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 class="text-xl font-bold text-gray-900">All Invoices</h3>
+          <button onclick="openCreateInvoiceModal()" class="bg-gradient-to-r from-purple-500 to-purple-600 hover:shadow-lg text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+            <i class="fas fa-plus"></i>Create Invoice
+          </button>
+        </div>
+        <div class="p-6 overflow-x-auto">
+          ${invoices.length === 0 ? '<p class="text-gray-500 text-center py-12">No invoices yet</p>' : `
+            <table class="w-full">
+              <thead class="bg-gray-50 text-xs font-semibold text-gray-600 uppercase">
+                <tr><th class="px-6 py-4 text-left">Date</th><th class="px-6 py-4 text-left">Patient</th><th class="px-6 py-4 text-left">Doctor</th><th class="px-6 py-4 text-left">Description</th><th class="px-6 py-4 text-left">Amount</th><th class="px-6 py-4 text-left">Tax</th><th class="px-6 py-4 text-left">Total</th><th class="px-6 py-4 text-left">Due</th><th class="px-6 py-4 text-left">Status</th></tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 text-sm">
+                ${invoices.map(i => `
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 text-gray-600">${new Date(i.createdAt).toLocaleDateString()}</td>
+                    <td class="px-6 py-4 font-semibold text-gray-900">${i.patientName}</td>
+                    <td class="px-6 py-4 text-gray-600">${i.doctorName || 'N/A'}</td>
+                    <td class="px-6 py-4 text-gray-600">${i.description}</td>
+                    <td class="px-6 py-4 font-bold text-gray-900">${formatCurrency(i.amount)}</td>
+                    <td class="px-6 py-4 text-gray-600">${i.tax}%</td>
+                    <td class="px-6 py-4 font-bold text-gray-900">${formatCurrency(i.total)}</td>
+                    <td class="px-6 py-4 text-gray-600">${new Date(i.dueDate).toLocaleDateString()}</td>
+                    <td class="px-6 py-4"><span class="status-${i.status} px-3 py-1 rounded-full text-xs font-semibold capitalize">${i.status}</span></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const openAddExpenseModal = () => {
+  const formHtml = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Description *</label><input type="text" name="description" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Amount *</label><input type="number" step="0.01" name="amount" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Category *</label>
+        <select name="category" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
+          <option value="salaries">Salaries</option><option value="supplies">Supplies</option><option value="utilities">Utilities</option><option value="maintenance">Maintenance</option><option value="marketing">Marketing</option><option value="other">Other</option>
+        </select>
+      </div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Payment Method *</label>
+        <select name="paymentMethod" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
+          <option value="eft">EFT</option><option value="cash">Cash</option><option value="card">Card</option><option value="debit-order">Debit Order</option>
+        </select>
+      </div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-all">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">Save</button>
+    </div>
+  `;
+  openModal('Add Expense', formHtml, async (form) => {
+    const expenseData = {
+      description: form.description.value, amount: parseFloat(form.amount.value), category: form.category.value,
+      paymentMethod: form.paymentMethod.value, date: new Date().toISOString()
+    };
+    await dbAdd('expenses', expenseData);
+    await addAuditLog(`Added expense: ${expenseData.description} - ${formatCurrency(expenseData.amount)}`);
+    renderView('expenses');
+  });
+};
+
+const renderExpenses = async (container) => {
+  const expenses = await dbGetAll('expenses');
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  document.getElementById('pageTitle').textContent = 'Expenses';
+  document.getElementById('pageSubtitle').textContent = 'Track all business expenses';
+  container.innerHTML = `
+    <div class="fade-in space-y-8">
+      <div class="stat-card bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-8 text-white">
+        <p class="text-lg opacity-80 mb-2 font-medium">Total Expenses</p>
+        <h3 class="text-4xl font-bold">${formatCurrency(totalExpenses)}</h3>
+      </div>
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 class="text-xl font-bold text-gray-900">All Expenses</h3>
+          <button onclick="openAddExpenseModal()" class="bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+            <i class="fas fa-plus"></i>Add Expense
+          </button>
+        </div>
+        <div class="p-6 overflow-x-auto">
+          ${expenses.length === 0 ? '<p class="text-gray-500 text-center py-12">No expenses yet</p>' : `
+            <table class="w-full">
+              <thead class="bg-gray-50 text-xs font-semibold text-gray-600 uppercase">
+                <tr><th class="px-6 py-4 text-left">Date</th><th class="px-6 py-4 text-left">Description</th><th class="px-6 py-4 text-left">Category</th><th class="px-6 py-4 text-left">Method</th><th class="px-6 py-4 text-left">Amount</th></tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 text-sm">
+                ${expenses.map(e => `
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 text-gray-600">${new Date(e.date).toLocaleDateString()}</td>
+                    <td class="px-6 py-4 font-semibold text-gray-900">${e.description}</td>
+                    <td class="px-6 py-4"><span class="px-3 py-1 bg-gray-100 rounded-full text-xs font-semibold capitalize">${e.category}</span></td>
+                    <td class="px-6 py-4 text-gray-600 capitalize">${e.paymentMethod}</td>
+                    <td class="px-6 py-4 font-bold text-red-600">${formatCurrency(e.amount)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const openSubmitClaimModal = () => {
+  const formHtml = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Patient Name *</label><input type="text" name="patientName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Patient ID</label><input type="number" name="patientId" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Medical Aid *</label><input type="text" name="medicalAid" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Member Number *</label><input type="text" name="memberNumber" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Amount *</label><input type="number" step="0.01" name="amount" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Service Date</label><input type="date" name="serviceDate" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></div>
+      <div class="md:col-span-2"><label class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+        <select name="status" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+          <option value="draft">Draft</option><option value="submitted">Submitted</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="paid">Paid</option><option value="rejected">Rejected</option><option value="overdue">Overdue</option>
+        </select>
+      </div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-all">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">Save</button>
+    </div>
+  `;
+  openModal('Submit Claim', formHtml, async (form) => {
+    const claimData = {
+      patientName: form.patientName.value, patientId: form.patientId.value ? parseInt(form.patientId.value) : null,
+      medicalAid: form.medicalAid.value, memberNumber: form.memberNumber.value, amount: parseFloat(form.amount.value),
+      serviceDate: form.serviceDate.value ? new Date(form.serviceDate.value).toISOString() : new Date().toISOString(), status: form.status.value, codes: []
+    };
+    await dbAdd('claims', claimData);
+    await addAuditLog(`Submitted claim for ${claimData.patientName}: ${formatCurrency(claimData.amount)}`);
+    renderView('claims');
+  });
+};
+
+const renderClaims = async (container) => {
+  const claims = await dbGetAll('claims');
+  document.getElementById('pageTitle').textContent = 'Claims';
+  document.getElementById('pageSubtitle').textContent = 'Manage medical aid claims';
+  container.innerHTML = `
+    <div class="fade-in">
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 class="text-xl font-bold text-gray-900">Claims</h3>
+          <button onclick="openSubmitClaimModal()" class="bg-gradient-to-r from-sky-500 to-sky-600 hover:shadow-lg text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+            <i class="fas fa-plus"></i>Submit Claim
+          </button>
+        </div>
+        <div class="p-6 overflow-x-auto">
+          ${claims.length === 0 ? '<p class="text-gray-500 text-center py-12">No claims yet</p>' : `
+            <table class="w-full">
+              <thead class="bg-gray-50 text-xs font-semibold text-gray-600 uppercase">
+                <tr><th class="px-6 py-4 text-left">Patient</th><th class="px-6 py-4 text-left">Medical Aid</th><th class="px-6 py-4 text-left">Amount</th><th class="px-6 py-4 text-left">Date</th><th class="px-6 py-4 text-left">Status</th><th class="px-6 py-4 text-left">Actions</th></tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 text-sm">
+                ${claims.map(c => `
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 font-semibold text-gray-900">${c.patientName}</td>
+                    <td class="px-6 py-4 text-gray-600">${c.medicalAid}</td>
+                    <td class="px-6 py-4 font-bold text-gray-900">${formatCurrency(c.amount)}</td>
+                    <td class="px-6 py-4 text-gray-600">${new Date(c.serviceDate).toLocaleDateString()}</td>
+                    <td class="px-6 py-4"><span class="status-${c.status} px-3 py-1 rounded-full text-xs font-semibold capitalize">${c.status}</span></td>
+                    <td class="px-6 py-4">
+                      <select onchange="updateClaimStatus(${c.id}, this.value)" class="text-xs border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500 outline-none bg-white">
+                        <option value="draft" ${c.status === 'draft' ? 'selected' : ''}>Draft</option>
+                        <option value="submitted" ${c.status === 'submitted' ? 'selected' : ''}>Submitted</option>
+                        <option value="pending" ${c.status === 'pending' ? 'selected' : ''}>Pending</option>
+                        <option value="approved" ${c.status === 'approved' ? 'selected' : ''}>Approved</option>
+                        <option value="paid" ${c.status === 'paid' ? 'selected' : ''}>Paid</option>
+                        <option value="rejected" ${c.status === 'rejected' ? 'selected' : ''}>Rejected</option>
+                        <option value="overdue" ${c.status === 'overdue' ? 'selected' : ''}>Overdue</option>
+                      </select>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+const updateClaimStatus = async (id, newStatus) => {
+  const claim = await dbGetById('claims', id);
+  if (!claim) return;
+  claim.status = newStatus;
+  await dbUpdate('claims', claim);
+  await addAuditLog(`Updated claim for ${claim.patientName} to ${newStatus}`);
+  showToast(`Claim status updated to ${newStatus}`, 'success');
+  renderView('claims');
+};
+
+const switchReportTab = (tab) => {
+  document.querySelectorAll('.report-content').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.report-tab').forEach(el => { el.classList.remove('bg-sky-500','text-white'); el.classList.add('bg-gray-100','text-gray-700'); });
+  document.getElementById('reportContent-' + tab).classList.remove('hidden');
+  const activeBtn = document.getElementById('reportTab-' + tab);
+  if (activeBtn) { activeBtn.classList.add('bg-sky-500','text-white'); activeBtn.classList.remove('bg-gray-100','text-gray-700'); }
+};
+
+const renderReports = async (container) => {
+  const patients = await dbGetAll('patients');
+  const doctors = await dbGetAll('doctors');
+  const nurses = await dbGetAll('nurses');
+  const payments = await dbGetAll('payments');
+  const expenses = await dbGetAll('expenses');
+  const claims = await dbGetAll('claims');
+  const invoices = await dbGetAll('invoices');
+  const appointments = await dbGetAll('appointments');
+  const prescriptions = await dbGetAll('prescriptions');
+  const auditLogs = await dbGetAll('auditLogs');
+  
+  document.getElementById('pageTitle').textContent = 'Reports & Analytics';
+  document.getElementById('pageSubtitle').textContent = 'View comprehensive reports and analytics';
+  
+  const totalRevenue = payments.reduce((s, p) => s + (p.amount || 0), 0);
+  const totalExpenses = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+  const totalInvoiced = invoices.reduce((s, i) => s + (i.total || i.amount || 0), 0);
+  const paidInvoices = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + (i.total || i.amount || 0), 0);
+  const unpaidInvoices = invoices.filter(i => i.status !== 'paid').reduce((s, i) => s + (i.total || i.amount || 0), 0);
+  
+  container.innerHTML = `
+    <div class="fade-in space-y-6">
+      <div class="flex gap-2 flex-wrap">
+        <button onclick="switchReportTab('financial')" id="reportTab-financial" class="report-tab px-5 py-2.5 rounded-xl font-semibold text-sm bg-sky-500 text-white">Financial Summary</button>
+        <button onclick="switchReportTab('patients')" id="reportTab-patients" class="report-tab px-5 py-2.5 rounded-xl font-semibold text-sm bg-gray-100 text-gray-700 hover:bg-gray-200">Patient Report</button>
+        <button onclick="switchReportTab('appointments')" id="reportTab-appointments" class="report-tab px-5 py-2.5 rounded-xl font-semibold text-sm bg-gray-100 text-gray-700 hover:bg-gray-200">Appointments</button>
+        <button onclick="switchReportTab('audit')" id="reportTab-audit" class="report-tab px-5 py-2.5 rounded-xl font-semibold text-sm bg-gray-100 text-gray-700 hover:bg-gray-200">Audit Trail</button>
+        <button onclick="switchReportTab('medications')" id="reportTab-medications" class="report-tab px-5 py-2.5 rounded-xl font-semibold text-sm bg-gray-100 text-gray-700 hover:bg-gray-200">Medications</button>
+      </div>
+      
+      <div id="reportContent-financial" class="report-content">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white rounded-2xl border border-gray-200 p-6"><p class="text-sm text-gray-500 font-semibold">Total Revenue</p><p class="text-2xl font-bold text-emerald-600 mt-1">R ${totalRevenue.toLocaleString('en-ZA', {minimumFractionDigits:2})}</p></div>
+          <div class="bg-white rounded-2xl border border-gray-200 p-6"><p class="text-sm text-gray-500 font-semibold">Total Expenses</p><p class="text-2xl font-bold text-red-600 mt-1">R ${totalExpenses.toLocaleString('en-ZA', {minimumFractionDigits:2})}</p></div>
+          <div class="bg-white rounded-2xl border border-gray-200 p-6"><p class="text-sm text-gray-500 font-semibold">Net Income</p><p class="text-2xl font-bold text-sky-600 mt-1">R ${(totalRevenue - totalExpenses).toLocaleString('en-ZA', {minimumFractionDigits:2})}</p></div>
+          <div class="bg-white rounded-2xl border border-gray-200 p-6"><p class="text-sm text-gray-500 font-semibold">Outstanding</p><p class="text-2xl font-bold text-amber-600 mt-1">R ${unpaidInvoices.toLocaleString('en-ZA', {minimumFractionDigits:2})}</p></div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 mt-4">
+          <h4 class="font-bold text-gray-900 mb-4">Revenue Breakdown</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 bg-emerald-50 rounded-xl"><p class="text-sm text-emerald-700 font-semibold">Paid Invoices</p><p class="text-lg font-bold text-emerald-800">R ${paidInvoices.toLocaleString('en-ZA', {minimumFractionDigits:2})}</p></div>
+            <div class="p-4 bg-amber-50 rounded-xl"><p class="text-sm text-amber-700 font-semibold">Pending Payments</p><p class="text-lg font-bold text-amber-800">R ${payments.filter(p=>p.status==='pending').reduce((s,p)=>s+(p.amount||0),0).toLocaleString('en-ZA', {minimumFractionDigits:2})}</p></div>
+            <div class="p-4 bg-blue-50 rounded-xl"><p class="text-sm text-blue-700 font-semibold">Medical Aid Claims</p><p class="text-lg font-bold text-blue-800">R ${claims.reduce((s,c)=>s+(c.amount||0),0).toLocaleString('en-ZA', {minimumFractionDigits:2})}</p></div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="reportContent-patients" class="report-content hidden">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white rounded-2xl border border-gray-200 p-6"><p class="text-sm text-gray-500 font-semibold">Total Patients</p><p class="text-2xl font-bold text-sky-600 mt-1">${patients.length}</p></div>
+          <div class="bg-white rounded-2xl border border-gray-200 p-6"><p class="text-sm text-gray-500 font-semibold">Approved</p><p class="text-2xl font-bold text-emerald-600 mt-1">${patients.filter(p=>p.status==='approved').length}</p></div>
+          <div class="bg-white rounded-2xl border border-gray-200 p-6"><p class="text-sm text-gray-500 font-semibold">Pending</p><p class="text-2xl font-bold text-amber-600 mt-1">${patients.filter(p=>p.status==='pending').length}</p></div>
+          <div class="bg-white rounded-2xl border border-gray-200 p-6"><p class="text-sm text-gray-500 font-semibold">Rejected</p><p class="text-2xl font-bold text-red-600 mt-1">${patients.filter(p=>p.status==='rejected').length}</p></div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 mt-4">
+          <h4 class="font-bold text-gray-900 mb-4">Patient Demographics</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 bg-sky-50 rounded-xl"><p class="text-sm text-sky-700 font-semibold">Male Patients</p><p class="text-lg font-bold text-sky-800">${patients.filter(p=>p.gender==='Male').length}</p></div>
+            <div class="p-4 bg-pink-50 rounded-xl"><p class="text-sm text-pink-700 font-semibold">Female Patients</p><p class="text-lg font-bold text-pink-800">${patients.filter(p=>p.gender==='Female').length}</p></div>
+            <div class="p-4 bg-purple-50 rounded-xl"><p class="text-sm text-purple-700 font-semibold">With Chronic Conditions</p><p class="text-lg font-bold text-purple-800">${patients.filter(p=>p.chronicConditions).length}</p></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 mt-4">
+          <h4 class="font-bold text-gray-900 mb-4">Recent Patients</h4>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left font-semibold text-gray-600">Name</th><th class="px-4 py-3 text-left font-semibold text-gray-600">Email</th><th class="px-4 py-3 text-left font-semibold text-gray-600">Status</th><th class="px-4 py-3 text-left font-semibold text-gray-600">Joined</th></tr></thead>
+            <tbody class="divide-y divide-gray-100">${patients.slice().reverse().slice(0,10).map(p=>`<tr><td class="px-4 py-3 font-medium">${p.firstName} ${p.lastName}</td><td class="px-4 py-3 text-gray-500">${p.email}</td><td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-semibold ${p.status==='approved'?'bg-emerald-100 text-emerald-700':p.status==='pending'?'bg-amber-100 text-amber-700':'bg-red-100 text-red-700'}">${p.status}</span></td><td class="px-4 py-3 text-gray-500">${new Date(p.createdAt).toLocaleDateString()}</td></tr>`).join('')}</tbody></table>
+          </div>
+        </div>
+      </div>
+      
+      <div id="reportContent-appointments" class="report-content hidden">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white rounded-2xl border border-gray-200 p-6"><p class="text-sm text-gray-500 font-semibold">Total Appointments</p><p class="text-2xl font-bold text-sky-600 mt-1">${appointments.length}</p></div>
+          <div class="bg-white rounded-2xl border border-gray-200 p-6"><p class="text-sm text-gray-500 font-semibold">Completed</p><p class="text-2xl font-bold text-emerald-600 mt-1">${appointments.filter(a=>a.status==='completed').length}</p></div>
+          <div class="bg-white rounded-2xl border border-gray-200 p-6"><p class="text-sm text-gray-500 font-semibold">Scheduled</p><p class="text-2xl font-bold text-amber-600 mt-1">${appointments.filter(a=>a.status==='scheduled'||a.status==='confirmed').length}</p></div>
+          <div class="bg-white rounded-2xl border border-gray-200 p-6"><p class="text-sm text-gray-500 font-semibold">Cancelled</p><p class="text-2xl font-bold text-red-600 mt-1">${appointments.filter(a=>a.status==='cancelled').length}</p></div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 mt-4">
+          <h4 class="font-bold text-gray-900 mb-4">Recent Appointments</h4>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left font-semibold text-gray-600">Patient</th><th class="px-4 py-3 text-left font-semibold text-gray-600">Doctor</th><th class="px-4 py-3 text-left font-semibold text-gray-600">Date</th><th class="px-4 py-3 text-left font-semibold text-gray-600">Type</th><th class="px-4 py-3 text-left font-semibold text-gray-600">Status</th></tr></thead>
+            <tbody class="divide-y divide-gray-100">${appointments.slice().reverse().slice(0,10).map(a=>`<tr><td class="px-4 py-3 font-medium">${a.patientName||'N/A'}</td><td class="px-4 py-3 text-gray-600">${a.doctorName||'Dr.'}</td><td class="px-4 py-3 text-gray-500">${a.date||'N/A'}</td><td class="px-4 py-3 text-gray-500">${a.type||'General'}</td><td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-semibold ${a.status==='completed'?'bg-emerald-100 text-emerald-700':a.status==='cancelled'?'bg-red-100 text-red-700':'bg-amber-100 text-amber-700'}">${a.status||'pending'}</span></td></tr>`).join('')}</tbody></table>
+          </div>
+        </div>
+      </div>
+      
+      <div id="reportContent-audit" class="report-content hidden">
+        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <div class="p-6 border-b border-gray-200"><h4 class="font-bold text-gray-900">Audit Trail</h4><p class="text-sm text-gray-500">${auditLogs.length} total entries</p></div>
+          <div class="p-6">${auditLogs.length===0?'<p class="text-gray-500 text-center py-12">No audit logs yet</p>':`<div class="space-y-3">${auditLogs.slice().reverse().slice(0,50).map(log=>`<div class="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><p class="font-medium text-gray-900">${log.action}</p><p class="text-sm text-gray-500">${new Date(log.timestamp).toLocaleString()}</p></div>`).join('')}</div>`}</div>
+        </div>
+      </div>
+
+      <div id="reportContent-medications" class="report-content hidden">
+        ${(() => {
+          const totalPrescribed = prescriptions.length;
+          const dispensed = prescriptions.filter(p => p.status === 'dispensed').length;
+          const active = prescriptions.filter(p => p.status === 'active').length;
+          const pending = prescriptions.filter(p => p.status === 'pending').length;
+          const cancelled = prescriptions.filter(p => p.status === 'cancelled').length;
+          const medCounts = {};
+          prescriptions.forEach(p => { const m = p.medication; medCounts[m] = (medCounts[m] || 0) + 1; });
+          const topMeds = Object.entries(medCounts).sort((a,b) => b[1] - a[1]).slice(0,8);
+          return `
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div class="bg-white rounded-2xl border border-gray-200 p-6"><p class="text-sm text-gray-500 font-semibold">Total Prescribed</p><p class="text-2xl font-bold text-sky-600 mt-1">${totalPrescribed}</p></div>
+              <div class="bg-white rounded-2xl border border-gray-200 p-6"><p class="text-sm text-gray-500 font-semibold">Dispensed</p><p class="text-2xl font-bold text-emerald-600 mt-1">${dispensed}</p></div>
+              <div class="bg-white rounded-2xl border border-gray-200 p-6"><p class="text-sm text-gray-500 font-semibold">Active</p><p class="text-2xl font-bold text-blue-600 mt-1">${active}</p></div>
+              <div class="bg-white rounded-2xl border border-gray-200 p-6"><p class="text-sm text-gray-500 font-semibold">Pending</p><p class="text-2xl font-bold text-amber-600 mt-1">${pending}</p></div>
+              <div class="bg-white rounded-2xl border border-gray-200 p-6"><p class="text-sm text-gray-500 font-semibold">Cancelled</p><p class="text-2xl font-bold text-rose-600 mt-1">${cancelled}</p></div>
+            </div>
+            <div class="bg-white rounded-2xl border border-gray-200 p-6 mt-4">
+              <h4 class="font-bold text-gray-900 mb-4"><i class="fas fa-chart-bar text-emerald-500 mr-2"></i>Most Prescribed Medications</h4>
+              ${topMeds.length === 0 ? '<p class="text-gray-400 text-center py-4">No medication data</p>' : `
+              <div class="space-y-3">${topMeds.map(([med, count], i) => `
+                  <div class="flex items-center gap-4">
+                    <span class="text-sm font-semibold text-gray-500 w-6">${i+1}.</span>
+                    <div class="flex-1">
+                      <div class="flex justify-between mb-1">
+                        <span class="text-sm font-semibold text-gray-800">${med}</span>
+                        <span class="text-sm text-gray-500">${count}</span>
+                      </div>
+                      <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full" style="width:${(count / Math.max(...topMeds.map(m=>m[1])) * 100)}%"></div>
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>`}
+            </div>
+            <div class="bg-white rounded-2xl border border-gray-200 p-6 mt-4">
+              <h4 class="font-bold text-gray-900 mb-4">All Prescriptions</h4>
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left font-semibold text-gray-600">Medication</th><th class="px-4 py-3 text-left font-semibold text-gray-600">Patient</th><th class="px-4 py-3 text-left font-semibold text-gray-600">Doctor</th><th class="px-4 py-3 text-left font-semibold text-gray-600">Dosage</th><th class="px-4 py-3 text-left font-semibold text-gray-600">Status</th><th class="px-4 py-3 text-left font-semibold text-gray-600">Date</th></tr></thead>
+                <tbody class="divide-y divide-gray-100">${prescriptions.slice().reverse().map(p => `<tr><td class="px-4 py-3 font-medium">${p.medication}</td><td class="px-4 py-3 text-gray-600">${p.patientName}</td><td class="px-4 py-3 text-gray-500">${p.doctorName}</td><td class="px-4 py-3 text-gray-500">${p.dosage}</td><td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-semibold status-${p.status}">${p.status}</span></td><td class="px-4 py-3 text-gray-400">${new Date(p.prescribedDate).toLocaleDateString()}</td></tr>`).join('')}</tbody></table>
+              </div>
+            </div>
+          `;
+        })()}
+      </div>
+    </div>
+  `;
+};
+
+const renderMyRecords = async (container) => {
+  document.getElementById('pageTitle').textContent = 'My Records';
+  document.getElementById('pageSubtitle').textContent = 'View my medical records';
+  const patients = await dbGetAll('patients');
+  const patient = patients.find(p => p.status === 'approved') || patients[0];
+  container.innerHTML = `
+    <div class="fade-in">
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-8 border-b border-gray-200 bg-gradient-to-r from-sky-50 to-emerald-50">
+          <div class="flex flex-col md:flex-row items-center gap-6">
+            <div class="w-24 h-24 bg-gradient-to-br from-sky-500 to-emerald-500 rounded-3xl flex items-center justify-center text-white text-4xl font-bold">
+              ${patient ? patient.firstName[0] + patient.lastName[0] : 'P'}
+            </div>
+            <div class="text-center md:text-left">
+              <h3 class="text-2xl font-bold text-gray-900">${patient ? patient.firstName + ' ' + patient.lastName : 'Patient Name'}</h3>
+              <p class="text-gray-600">${patient ? patient.email : 'patient@email.com'}</p>
+            </div>
+          </div>
+        </div>
+        <div class="p-8">
+          ${patient ? `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="p-6 bg-gray-50 rounded-2xl"><h4 class="text-sm font-semibold text-gray-500 mb-2">ID Number</h4><p class="text-lg font-medium text-gray-900">${patient.idNumber}</p></div>
+              ${patient.dob ? `<div class="p-6 bg-gray-50 rounded-2xl"><h4 class="text-sm font-semibold text-gray-500 mb-2">Date of Birth</h4><p class="text-lg font-medium text-gray-900">${patient.dob}</p></div>` : ''}
+              ${patient.gender ? `<div class="p-6 bg-gray-50 rounded-2xl"><h4 class="text-sm font-semibold text-gray-500 mb-2">Gender</h4><p class="text-lg font-medium text-gray-900">${patient.gender}</p></div>` : ''}
+              ${patient.bloodType ? `<div class="p-6 bg-gray-50 rounded-2xl"><h4 class="text-sm font-semibold text-gray-500 mb-2">Blood Type</h4><p class="text-lg font-medium text-gray-900">${patient.bloodType}</p></div>` : ''}
+              ${patient.allergies ? `<div class="p-6 bg-red-50 rounded-2xl md:col-span-2"><h4 class="text-sm font-semibold text-red-600 mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>Allergies</h4><p class="text-lg font-medium text-red-800">${patient.allergies}</p></div>` : ''}
+              ${patient.medicalAid ? `<div class="p-6 bg-gray-50 rounded-2xl"><h4 class="text-sm font-semibold text-gray-500 mb-2">Medical Aid</h4><p class="text-lg font-medium text-gray-900">${patient.medicalAid}</p></div>` : ''}
+              ${patient.medicalAidNumber ? `<div class="p-6 bg-gray-50 rounded-2xl"><h4 class="text-sm font-semibold text-gray-500 mb-2">Medical Aid Number</h4><p class="text-lg font-medium text-gray-900">${patient.medicalAidNumber}</p></div>` : ''}
+            </div>
+          ` : '<p class="text-gray-500 text-center py-12">No records available</p>'}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const renderMyMedications = async (container) => {
+  const medications = await dbGetAll('medications');
+  document.getElementById('pageTitle').textContent = 'My Medications';
+  document.getElementById('pageSubtitle').textContent = 'View my medications';
+  container.innerHTML = `
+    <div class="fade-in">
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200"><h3 class="text-xl font-bold text-gray-900">Medications</h3></div>
+        <div class="p-6">
+          ${medications.length === 0 ? '<p class="text-gray-500 text-center py-12">No medications yet</p>' : `
+            <div class="space-y-4">
+              ${medications.map(m => `
+                <div class="p-6 bg-gradient-to-r from-sky-50 to-emerald-50 rounded-2xl border border-gray-200">
+                  <h4 class="font-bold text-xl text-gray-900 mb-2">${m.medication} <span class="text-lg font-normal text-gray-600">— ${m.dosage}</span></h4>
+                  ${m.administeredBy ? `<p class="text-sm text-gray-600 mb-2"><i class="fas fa-user-md mr-2"></i>Prescribed by ${m.administeredBy}</p>` : ''}
+                  ${m.notes ? `<p class="text-sm text-gray-500 italic">${m.notes}</p>` : ''}
+                  <p class="text-xs text-gray-400 mt-3">${new Date(m.date).toLocaleString()}</p>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const openBookAppointmentModal = () => {
+  const formHtml = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div class="md:col-span-2"><label class="block text-sm font-semibold text-gray-700 mb-2">Patient Name *</label><input type="text" name="patientName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></div>
+      <div class="md:col-span-2"><label class="block text-sm font-semibold text-gray-700 mb-2">Doctor *</label><input type="text" name="doctorName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Date *</label><input type="date" name="date" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Time *</label><input type="time" name="time" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></div>
+      <div class="md:col-span-2"><label class="block text-sm font-semibold text-gray-700 mb-2">Reason</label><textarea name="reason" rows="3" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></textarea></div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-all">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">Book</button>
+    </div>
+  `;
+  openModal('Book Appointment', formHtml, async (form) => {
+    const appointmentData = {
+      patientName: form.patientName.value, doctorName: form.doctorName.value, date: form.date.value, time: form.time.value,
+      reason: form.reason.value || '', status: 'scheduled', createdAt: new Date().toISOString()
+    };
+    await dbAdd('appointments', appointmentData);
+    await addAuditLog(`Booked appointment for ${appointmentData.patientName} with ${appointmentData.doctorName}`);
+    renderView('my-appointments');
+  });
+};
+
+const renderMyAppointments = async (container) => {
+  const appointments = await dbGetAll('appointments');
+  document.getElementById('pageTitle').textContent = 'My Appointments';
+  document.getElementById('pageSubtitle').textContent = 'View and manage my appointments';
+  container.innerHTML = `
+    <div class="fade-in space-y-6">
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 class="text-xl font-bold text-gray-900">Appointments</h3>
+          <button onclick="openBookAppointmentModal()" class="bg-gradient-to-r from-sky-500 to-sky-600 hover:shadow-lg text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+            <i class="fas fa-plus"></i>Book Appointment
+          </button>
+        </div>
+        <div class="p-6">
+          ${appointments.length === 0 ? '<p class="text-gray-500 text-center py-12">No appointments yet</p>' : `
+            <div class="space-y-4">
+              ${appointments.map(a => `
+                <div class="p-6 bg-gray-50 rounded-2xl border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h4 class="font-bold text-xl text-gray-900 mb-2">${a.doctorName}</h4>
+                    <p class="text-lg text-gray-600 mb-1 flex items-center gap-2"><i class="fas fa-calendar"></i>${a.date} <i class="fas fa-clock ml-4"></i>${a.time}</p>
+                    ${a.reason ? `<p class="text-sm text-gray-500">${a.reason}</p>` : ''}
+                  </div>
+                  <span class="status-${a.status} px-4 py-2 rounded-full text-sm font-semibold capitalize">${a.status}</span>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const renderMyFinances = async (container) => {
+  const payments = await dbGetAll('payments');
+  const patientPayments = currentUser && currentUser.role === 'patient' ? payments.filter(p => p.patientId === currentUser.id) : payments;
+  document.getElementById('pageTitle').textContent = 'My Finances';
+  document.getElementById('pageSubtitle').textContent = 'View my payment history';
+  container.innerHTML = `
+    <div class="fade-in">
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200"><h3 class="text-xl font-bold text-gray-900">Payment History</h3></div>
+        <div class="p-6">
+          ${patientPayments.length === 0 ? '<p class="text-gray-500 text-center py-12">No payments yet</p>' : `
+            <div class="space-y-4">
+              ${patientPayments.map(p => `
+                <div class="p-6 bg-gray-50 rounded-2xl border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <p class="text-sm text-gray-500">${new Date(p.date).toLocaleDateString()}</p>
+                    <p class="text-sm text-gray-600 capitalize">${p.method}${p.reference ? ' • ' + p.reference : ''}</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-2xl font-bold text-gray-900">${formatCurrency(p.amount)}</p>
+                    <span class="status-${p.status} px-3 py-1 rounded-full text-xs font-semibold capitalize">${p.status}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const renderFindDoctors = async (container) => {
+  const doctors = await dbGetAll('doctors');
+  document.getElementById('pageTitle').textContent = 'Find Doctors';
+  document.getElementById('pageSubtitle').textContent = 'Browse available doctors';
+  container.innerHTML = `
+    <div class="fade-in">
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200"><h3 class="text-xl font-bold text-gray-900">Available Doctors</h3></div>
+        <div class="p-6">
+          ${doctors.filter(d => d.status === 'approved').length === 0 ? '<p class="text-gray-500 text-center py-12">No approved doctors available</p>' : `
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              ${doctors.filter(d => d.status === 'approved').map(d => `
+                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+                  <div class="flex items-center gap-4 mb-4">
+                    <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&h=100&fit=crop&crop=face" class="w-20 h-20 rounded-2xl object-cover">
+                    <div>
+                      <h4 class="font-bold text-xl text-gray-900">Dr. ${d.firstName} ${d.lastName}</h4>
+                      <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">${d.specialization}</span>
+                    </div>
+                  </div>
+                  <button onclick="alert('Book with Dr. ${d.firstName}')" class="w-full bg-gradient-to-r from-sky-500 to-sky-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all">
+                    Book Appointment
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const openAddScheduleModal = () => {
+  const formHtml = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Day *</label>
+        <select name="day" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+          <option value="Monday">Monday</option><option value="Tuesday">Tuesday</option><option value="Wednesday">Wednesday</option><option value="Thursday">Thursday</option>
+          <option value="Friday">Friday</option><option value="Saturday">Saturday</option><option value="Sunday">Sunday</option>
+        </select>
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="text-sm font-semibold text-gray-700 mr-2">Available</label>
+        <input type="checkbox" name="available" checked class="w-6 h-6">
+      </div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Start Time *</label><input type="time" name="startTime" value="09:00" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">End Time *</label><input type="time" name="endTime" value="17:00" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-all">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">Save</button>
+    </div>
+  `;
+  openModal('Add Time Slot', formHtml, async (form) => {
+    const scheduleData = {
+      doctorId: 1, doctorName: 'Dr. Sarah Wilson', day: form.day.value, startTime: form.startTime.value, endTime: form.endTime.value, available: form.available.checked
+    };
+    await dbAdd('doctorSchedules', scheduleData);
+    await addAuditLog(`Added schedule for ${scheduleData.day}`);
+    renderView('my-schedule');
+  });
+};
+
+const renderDoctorSchedule = async (container) => {
+  const schedules = await dbGetAll('doctorSchedules');
+  document.getElementById('pageTitle').textContent = 'My Schedule';
+  document.getElementById('pageSubtitle').textContent = 'Manage your availability';
+  container.innerHTML = `
+    <div class="fade-in space-y-6">
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 class="text-xl font-bold text-gray-900">Availability</h3>
+          <button onclick="openAddScheduleModal()" class="bg-gradient-to-r from-sky-500 to-sky-600 hover:shadow-lg text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+            <i class="fas fa-plus"></i>Add Time Slot
+          </button>
+        </div>
+        <div class="p-6">
+          ${schedules.length === 0 ? '<p class="text-gray-500 text-center py-12">No time slots set</p>' : `
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              ${schedules.map(s => `
+                <div class="p-6 border border-gray-200 rounded-2xl ${s.available ? 'bg-gradient-to-br from-emerald-50 to-sky-50' : 'bg-gray-100'}">
+                  <p class="font-bold text-xl text-gray-900 mb-2">${s.day}</p>
+                  <p class="text-lg text-gray-600 mb-3">${s.startTime} - ${s.endTime}</p>
+                  <p class="text-sm font-semibold ${s.available ? 'text-emerald-600' : 'text-red-600'} uppercase">${s.available ? 'Available' : 'Unavailable'}</p>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const renderAppointmentsList = async (container) => {
+  const appointments = await dbGetAll('appointments');
+  document.getElementById('pageTitle').textContent = 'Appointments';
+  document.getElementById('pageSubtitle').textContent = 'Manage all appointments';
+  container.innerHTML = `
+    <div class="fade-in">
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200"><h3 class="text-xl font-bold text-gray-900">All Appointments</h3></div>
+        <div class="p-6 overflow-x-auto">
+          ${appointments.length === 0 ? '<p class="text-gray-500 text-center py-12">No appointments yet</p>' : `
+            <table class="w-full">
+              <thead class="bg-gray-50 text-xs font-semibold text-gray-600 uppercase">
+                <tr><th class="px-6 py-4 text-left">Patient</th><th class="px-6 py-4 text-left">Date</th><th class="px-6 py-4 text-left">Time</th><th class="px-6 py-4 text-left">Reason</th><th class="px-6 py-4 text-left">Status</th></tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 text-sm">
+                ${appointments.map(a => `
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 font-semibold text-gray-900">${a.patientName}</td>
+                    <td class="px-6 py-4 text-gray-600">${a.date}</td>
+                    <td class="px-6 py-4 text-gray-600">${a.time}</td>
+                    <td class="px-6 py-4 text-gray-600">${a.reason || '-'}</td>
+                    <td class="px-6 py-4"><span class="status-${a.status} px-3 py-1 rounded-full text-xs font-semibold capitalize">${a.status}</span></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const openLogMedicationModal = () => {
+  const formHtml = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div class="md:col-span-2"><label class="block text-sm font-semibold text-gray-700 mb-2">Medication Name *</label><input type="text" name="medication" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Dosage *</label><input type="text" name="dosage" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none" placeholder="e.g. 500mg"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Prescribed By</label><input type="text" name="administeredBy" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></div>
+      <div class="md:col-span-2"><label class="block text-sm font-semibold text-gray-700 mb-2">Notes</label><textarea name="notes" rows="3" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none"></textarea></div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-all">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">Log</button>
+    </div>
+  `;
+  openModal('Log Medication', formHtml, async (form) => {
+    const medicationData = {
+      medication: form.medication.value, dosage: form.dosage.value, administeredBy: form.administeredBy.value || '', notes: form.notes.value || '', date: new Date().toISOString()
+    };
+    await dbAdd('medications', medicationData);
+    await addAuditLog(`Logged medication: ${medicationData.medication}`);
+    renderView('medications');
+  });
+};
+
+const renderMedicationsLog = async (container) => {
+  const medications = await dbGetAll('medications');
+  document.getElementById('pageTitle').textContent = 'Medications Log';
+  document.getElementById('pageSubtitle').textContent = 'Track medications';
+  container.innerHTML = `
+    <div class="fade-in">
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 class="text-xl font-bold text-gray-900">Medications Log</h3>
+          <button onclick="openLogMedicationModal()" class="bg-gradient-to-r from-sky-500 to-sky-600 hover:shadow-lg text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+            <i class="fas fa-plus"></i>Log Medication
+          </button>
+        </div>
+        <div class="p-6">
+          ${medications.length === 0 ? '<p class="text-gray-500 text-center py-12">No medications logged yet</p>' : `
+            <div class="space-y-4">
+              ${medications.map(m => `
+                <div class="p-6 bg-gray-50 rounded-2xl border border-gray-200">
+                  <h4 class="font-bold text-xl text-gray-900 mb-2">${m.medication} <span class="text-lg font-normal text-gray-600">— ${m.dosage}</span></h4>
+                  ${m.administeredBy ? `<p class="text-sm text-gray-600 mb-2 flex items-center gap-2"><i class="fas fa-user-md"></i>Prescribed by ${m.administeredBy}</p>` : ''}
+                  ${m.notes ? `<p class="text-sm text-gray-500 italic">${m.notes}</p>` : ''}
+                  <p class="text-xs text-gray-400 mt-3">${new Date(m.date).toLocaleString()}</p>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const renderChat = async (container) => {
+  const messages = await dbGetAll('chatMessages');
+  document.getElementById('pageTitle').textContent = 'Messages';
+  document.getElementById('pageSubtitle').textContent = 'Chat with patients/doctors';
+  container.innerHTML = `
+    <div class="fade-in">
+      <div class="bg-white rounded-2xl border border-gray-200 p-6">
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Chat</h3>
+        ${messages.length === 0 ? '<p class="text-gray-500 text-center py-12">No messages yet</p>' : `
+          <div class="space-y-4 mb-6">
+            ${messages.map(m => `
+              <div class="flex ${m.fromMe ? 'justify-end' : 'justify-start'}">
+                <div class="max-w-xs md:max-w-md p-4 rounded-2xl ${m.fromMe ? 'bg-gradient-to-r from-sky-500 to-sky-600 text-white' : 'bg-gray-100 text-gray-900'}">
+                  <p class="text-sm md:text-base">${m.message}</p>
+                  <p class="text-xs opacity-70 mt-2">${new Date(m.timestamp).toLocaleTimeString()}</p>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `}
+        <form id="chatForm" class="flex gap-3">
+          <input id="chatInput" type="text" placeholder="Type your message..." class="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+          <button type="submit" class="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  `;
+  document.getElementById('chatForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    if (message) {
+      await dbAdd('chatMessages', { message, fromMe: true, timestamp: new Date().toISOString() });
+      input.value = '';
+      renderView('chat');
+    }
+  });
+};
+
+const openAddNurseModal = () => {
+  const formHtml = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">First Name *</label><input type="text" name="firstName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Last Name *</label><input type="text" name="lastName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Email *</label><input type="email" name="email" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Phone</label><input type="text" name="phone" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Specialization *</label><input type="text" name="specialization" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">License Number *</label><input type="text" name="licenseNumber" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"></div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-all">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all">Save</button>
+    </div>
+  `;
+  openModal('Add New Nurse', formHtml, async (form) => {
+    const nurseData = {
+      firstName: form.firstName.value, lastName: form.lastName.value, email: form.email.value, phone: form.phone.value || '',
+      specialization: form.specialization.value, licenseNumber: form.licenseNumber.value,
+      status: 'pending', createdAt: new Date().toISOString()
+    };
+    await dbAdd('nurses', nurseData);
+    await addAuditLog(`Added new nurse: ${nurseData.firstName} ${nurseData.lastName}`);
+    renderView('nurses');
+  });
+};
+
+const renderNurses = async (container) => {
+  const nurses = await dbGetAll('nurses');
+  document.getElementById('pageTitle').textContent = 'Nurses';
+  document.getElementById('pageSubtitle').textContent = 'Manage all nurses';
+  container.innerHTML = `
+    <div class="fade-in">
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 class="text-xl font-bold text-gray-900">Nurses List</h3>
+          ${currentRole === 'admin' ? '<button onclick="openAddNurseModal()" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:shadow-lg text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2"><i class="fas fa-plus"></i>Add Nurse</button>' : ''}
+        </div>
+        <div class="p-6 overflow-x-auto">
+          ${nurses.length === 0 ? '<p class="text-gray-500 text-center py-12">No nurses yet</p>' : `
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              ${nurses.map(n => `
+                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+                  <div class="flex items-center gap-4 mb-4">
+                    <img src="https://images.unsplash.com/photo-1584515933487-779824d29309?w=80&h=80&fit=crop&crop=face" class="w-16 h-16 rounded-2xl object-cover">
+                    <div>
+                      <h4 class="font-bold text-lg text-gray-900">${n.firstName} ${n.lastName}</h4>
+                      <span class="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold">${n.specialization}</span>
+                    </div>
+                  </div>
+                  <div class="space-y-2 text-sm text-gray-600 mb-4">
+                    <p class="flex items-center gap-2"><i class="fas fa-envelope"></i> ${n.email}</p>
+                    <p class="flex items-center gap-2"><i class="fas fa-phone"></i> ${n.phone}</p>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="status-${n.status} px-3 py-1 rounded-full text-xs font-semibold capitalize">${n.status}</span>
+                    <button class="text-sky-600 hover:text-sky-700 font-semibold text-sm">View Profile</button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const openRecordVitalsModal = () => {
+  const formHtml = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div class="md:col-span-2"><label class="block text-sm font-semibold text-gray-700 mb-2">Patient Name *</label><input type="text" name="patientName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Blood Pressure</label><input type="text" name="bloodPressure" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none" placeholder="e.g. 120/80"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Heart Rate (bpm)</label><input type="number" name="heartRate" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Temperature (°C)</label><input type="number" step="0.1" name="temperature" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Oxygen Saturation (%)</label><input type="number" name="oxygenSaturation" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"></div>
+      <div class="md:col-span-2"><label class="block text-sm font-semibold text-gray-700 mb-2">Notes</label><textarea name="notes" rows="3" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"></textarea></div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200 transition-all">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all">Save</button>
+    </div>
+  `;
+  openModal('Record Vitals', formHtml, async (form) => {
+    const vitalsData = {
+      patientName: form.patientName.value, bloodPressure: form.bloodPressure.value || '', heartRate: form.heartRate.value ? parseInt(form.heartRate.value) : null,
+      temperature: form.temperature.value ? parseFloat(form.temperature.value) : null, oxygenSaturation: form.oxygenSaturation.value ? parseInt(form.oxygenSaturation.value) : null,
+      notes: form.notes.value || '', recordedBy: 'Nurse', date: new Date().toISOString()
+    };
+    await dbAdd('vitals', vitalsData);
+    await addAuditLog(`Recorded vitals for ${vitalsData.patientName}`);
+    renderView('vitals');
+  });
+};
+
+const renderVitals = async (container) => {
+  const vitals = await dbGetAll('vitals');
+  document.getElementById('pageTitle').textContent = 'Vitals & Triage';
+  document.getElementById('pageSubtitle').textContent = 'Record and view patient vitals';
+  container.innerHTML = `
+    <div class="fade-in space-y-6">
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 class="text-xl font-bold text-gray-900">Vitals Records</h3>
+          <button onclick="openRecordVitalsModal()" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:shadow-lg text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2">
+            <i class="fas fa-plus"></i>Record Vitals
+          </button>
+        </div>
+        <div class="p-6">
+          ${vitals.length === 0 ? '<p class="text-gray-500 text-center py-12">No vitals recorded yet</p>' : `
+            <div class="space-y-4">
+              ${vitals.map(v => `
+                <div class="p-6 bg-gray-50 rounded-2xl border border-gray-200">
+                  <h4 class="font-bold text-xl text-gray-900 mb-2">${v.patientName}</h4>
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+                    ${v.bloodPressure ? `<div class="bg-white p-3 rounded-lg border border-gray-200"><p class="text-xs text-gray-500">Blood Pressure</p><p class="font-semibold text-gray-900">${v.bloodPressure}</p></div>` : ''}
+                    ${v.heartRate ? `<div class="bg-white p-3 rounded-lg border border-gray-200"><p class="text-xs text-gray-500">Heart Rate</p><p class="font-semibold text-gray-900">${v.heartRate} bpm</p></div>` : ''}
+                    ${v.temperature ? `<div class="bg-white p-3 rounded-lg border border-gray-200"><p class="text-xs text-gray-500">Temperature</p><p class="font-semibold text-gray-900">${v.temperature}°C</p></div>` : ''}
+                    ${v.oxygenSaturation ? `<div class="bg-white p-3 rounded-lg border border-gray-200"><p class="text-xs text-gray-500">O2 Saturation</p><p class="font-semibold text-gray-900">${v.oxygenSaturation}%</p></div>` : ''}
+                  </div>
+                  ${v.notes ? `<p class="text-sm text-gray-500 italic mb-2">${v.notes}</p>` : ''}
+                  <p class="text-xs text-gray-400">${new Date(v.date).toLocaleString()}</p>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const renderPrescriptions = async (container) => {
+  const prescriptions = await dbGetAll('prescriptions');
+  document.getElementById('pageTitle').textContent = 'Prescriptions';
+  document.getElementById('pageSubtitle').textContent = 'Manage patient prescriptions';
+  container.innerHTML = `
+    <div class="fade-in space-y-6">
+      <div class="flex justify-end">
+        <button onclick="openAddPrescriptionModal()" class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 hover:shadow-lg">
+          <i class="fas fa-plus"></i>New Prescription
+        </button>
+      </div>
+      <div class="grid gap-4">
+        ${prescriptions.length === 0 ? '<div class="bg-white rounded-2xl border border-gray-200 p-12 text-center text-gray-500">No prescriptions yet</div>' :
+          prescriptions.sort((a,b) => new Date(b.prescribedDate) - new Date(a.prescribedDate)).map(p => {
+            const statusColors = { pending: 'bg-amber-100 text-amber-700', active: 'bg-emerald-100 text-emerald-700', dispensed: 'bg-blue-100 text-blue-700', cancelled: 'bg-gray-100 text-gray-500' };
+            return `
+              <div class="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-md transition-all">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-3 mb-3">
+                      <div class="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">${p.patientName.charAt(0)}</div>
+                      <div><h4 class="font-bold text-gray-900">${p.medication}</h4><p class="text-sm text-gray-500">for ${p.patientName}</p></div>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div><span class="text-gray-400 block">Dosage</span><span class="font-semibold text-gray-700">${p.dosage}</span></div>
+                      <div><span class="text-gray-400 block">Quantity</span><span class="font-semibold text-gray-700">${p.quantity}</span></div>
+                      <div><span class="text-gray-400 block">Repeats</span><span class="font-semibold text-gray-700">${p.repeats}</span></div>
+                      <div><span class="text-gray-400 block">Doctor</span><span class="font-semibold text-gray-700">${p.doctorName}</span></div>
+                    </div>
+                    ${p.instructions ? `<div class="mt-3 text-sm"><span class="text-gray-400">Instructions:</span> <span class="text-gray-600">${p.instructions}</span></div>` : ''}
+                    ${p.notes ? `<div class="mt-1 text-sm"><span class="text-gray-400">Notes:</span> <span class="text-gray-600">${p.notes}</span></div>` : ''}
+                    <div class="mt-2 text-xs text-gray-400">${new Date(p.prescribedDate).toLocaleDateString()}</div>
+                  </div>
+                  <div class="flex flex-col items-end gap-2">
+                    <span class="px-4 py-1.5 ${statusColors[p.status] || 'bg-gray-100 text-gray-500'} rounded-full text-xs font-semibold capitalize">${p.status}</span>
+                    <div class="flex gap-2 mt-2">
+                      ${p.status === 'pending' ? `<button onclick="updatePrescriptionStatus(${p.id || p._id || p.$loki},'active')" class="text-xs px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 font-semibold">Activate</button>` : ''}
+                      ${p.status === 'active' ? `<button onclick="updatePrescriptionStatus(${p.id || p._id || p.$loki},'dispensed')" class="text-xs px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-semibold">Dispensed</button>` : ''}
+                      ${p.status !== 'cancelled' ? `<button onclick="updatePrescriptionStatus(${p.id || p._id || p.$loki},'cancelled')" class="text-xs px-3 py-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 font-semibold">Cancel</button>` : ''}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')
+        }
+      </div>
+    </div>
+  `;
+};
+
+const openAddPrescriptionModal = () => {
+  const formHtml = `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Patient *</label><select name="patientName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"><option value="">Select patient</option><option value="John Smith">John Smith</option><option value="Emily Johnson">Emily Johnson</option><option value="Michael Brown">Michael Brown</option><option value="Sarah Davis">Sarah Davis</option></select></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Doctor *</label><select name="doctorName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"><option value="">Select doctor</option><option value="Dr. Sarah Wilson">Dr. Sarah Wilson</option><option value="Dr. James Miller">Dr. James Miller</option><option value="Dr. David Lee">Dr. David Lee</option></select></div>
+      <div class="md:col-span-2"><label class="block text-sm font-semibold text-gray-700 mb-2">Medication *</label><input type="text" name="medication" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Amoxicillin 500mg"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Dosage *</label><input type="text" name="dosage" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. 1 tablet 3x daily"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Quantity *</label><input type="number" name="quantity" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Repeats</label><input type="number" name="repeats" value="0" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Instructions</label><textarea name="instructions" rows="2" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></textarea></div>
+      <div class="md:col-span-2"><label class="block text-sm font-semibold text-gray-700 mb-2">Notes</label><textarea name="notes" rows="2" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></textarea></div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-lg">Create Prescription</button>
+    </div>
+  `;
+  openModal('New Prescription', formHtml, async (form) => {
+    await dbAdd('prescriptions', {
+      patientName: form.patientName.value, doctorName: form.doctorName.value,
+      medication: form.medication.value, dosage: form.dosage.value,
+      quantity: parseInt(form.quantity.value), repeats: parseInt(form.repeats.value) || 0,
+      instructions: form.instructions.value, notes: form.notes.value,
+      status: 'pending', prescribedDate: new Date().toISOString()
+    });
+    renderView('prescriptions');
+  });
+};
+
+const updatePrescriptionStatus = async (id, newStatus) => {
+  const prescriptions = await dbGetAll('prescriptions');
+  const presc = prescriptions.find(p => (p.id === id || p._id === id || p.$loki === id));
+  if (!presc) return;
+  presc.status = newStatus;
+  await dbUpdate('prescriptions', presc);
+  renderView('prescriptions');
+};
+
+const renderProcedures = async (container) => {
+  const procedures = await dbGetAll('procedures');
+  document.getElementById('pageTitle').textContent = 'Standard Procedures';
+  document.getElementById('pageSubtitle').textContent = 'SA medical procedures checklist';
+  const categories = [...new Set(procedures.map(p => p.category))];
+  container.innerHTML = `
+    <div class="fade-in space-y-6">
+      <div class="flex justify-between items-center">
+        <p class="text-sm text-gray-500">${procedures.length} standard procedures</p>
+        <button onclick="openAddProcedureModal()" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 hover:shadow-lg">
+          <i class="fas fa-plus"></i>Add Procedure
+        </button>
+      </div>
+      ${categories.map(cat => {
+        const catProcs = procedures.filter(p => p.category === cat);
+        const checked = catProcs.filter(p => p.checked);
+        return `
+          <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+              <h3 class="font-bold text-gray-800"><i class="fas fa-folder-open text-blue-500 mr-2"></i>${cat}</h3>
+              <span class="text-xs font-semibold text-gray-400">${checked.length}/${catProcs.length}</span>
+            </div>
+            <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              ${catProcs.map(p => `
+                <label class="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-all ${p.checked ? 'bg-emerald-50 border border-emerald-200' : 'border border-gray-100'}">
+                  <input type="checkbox" ${p.checked ? 'checked' : ''} onchange="toggleProcedure(${(p.id || p._id || p.$loki)})" class="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-900">${p.name}</p>
+                    <p class="text-xs text-gray-400">${p.duration || ''}</p>
+                  </div>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+};
+
+const toggleProcedure = async (id) => {
+  const procedures = await dbGetAll('procedures');
+  const proc = procedures.find(p => (p.id === id || p._id === id || p.$loki === id));
+  if (!proc) return;
+  proc.checked = !proc.checked;
+  await dbUpdate('procedures', proc);
+  renderView('procedures');
+};
+
+const openAddProcedureModal = () => {
+  const formHtml = `
+    <div class="grid grid-cols-1 gap-5">
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Procedure Name *</label><input type="text" name="name" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. Rapid Malaria Test"></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Category *</label><select name="category" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"><option value="Consultation">Consultation</option><option value="Lab">Lab</option><option value="Screening">Screening</option><option value="Procedure">Procedure</option><option value="Diagnostic">Diagnostic</option><option value="Prevention">Prevention</option></select></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Duration</label><input type="text" name="duration" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 15 min"></div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg">Add Procedure</button>
+    </div>
+  `;
+  openModal('Add New Procedure', formHtml, async (form) => {
+    await dbAdd('procedures', { name: form.name.value, category: form.category.value, duration: form.duration.value, standard: false, checked: false });
+    renderView('procedures');
+  });
+};
+
+const renderDoctorNotes = async (container) => {
+  const notes = await dbGetAll('doctorNotes');
+  document.getElementById('pageTitle').textContent = 'Doctor Notes';
+  document.getElementById('pageSubtitle').textContent = 'Clinical notes from consultations';
+  container.innerHTML = `
+    <div class="fade-in space-y-6">
+      <div class="flex justify-end">
+        <button onclick="openAddDoctorNoteModal()" class="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 hover:shadow-lg">
+          <i class="fas fa-plus"></i>New Note
+        </button>
+      </div>
+      <div class="grid gap-4">
+        ${notes.length === 0 ? '<div class="bg-white rounded-2xl border border-gray-200 p-12 text-center text-gray-500">No notes yet</div>' :
+          notes.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).map(n => {
+            const typeColors = { consultation: 'bg-sky-100 text-sky-700', 'follow-up': 'bg-emerald-100 text-emerald-700', referral: 'bg-amber-100 text-amber-700', procedure: 'bg-purple-100 text-purple-700', discharge: 'bg-blue-100 text-blue-700' };
+            return `
+              <div class="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-md transition-all">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="flex items-start gap-4 flex-1 min-w-0">
+                    <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${n.patientName.charAt(0)}</div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-3 mb-2">
+                        <h4 class="font-bold text-gray-900">${n.patientName}</h4>
+                        <span class="px-3 py-0.5 ${typeColors[n.type] || 'bg-gray-100 text-gray-600'} rounded-full text-xs font-semibold capitalize">${n.type || 'general'}</span>
+                      </div>
+                      <p class="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">${n.note}</p>
+                      <div class="flex items-center gap-4 mt-3 text-xs text-gray-400">
+                        <span><i class="far fa-user mr-1"></i>${n.doctorName}</span>
+                        <span><i class="far fa-clock mr-1"></i>${new Date(n.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')
+        }
+      </div>
+    </div>
+  `;
+};
+
+const openAddDoctorNoteModal = () => {
+  const formHtml = `
+    <div class="grid grid-cols-1 gap-5">
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Patient *</label><select name="patientName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"><option value="">Select patient</option><option value="John Smith">John Smith</option><option value="Emily Johnson">Emily Johnson</option><option value="Michael Brown">Michael Brown</option><option value="Sarah Davis">Sarah Davis</option></select></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Doctor *</label><select name="doctorName" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"><option value="">Select doctor</option><option value="Dr. Sarah Wilson">Dr. Sarah Wilson</option><option value="Dr. James Miller">Dr. James Miller</option><option value="Dr. David Lee">Dr. David Lee</option></select></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Note Type</label><select name="type" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"><option value="consultation">Consultation</option><option value="follow-up">Follow-up</option><option value="referral">Referral</option><option value="procedure">Procedure Note</option><option value="discharge">Discharge Summary</option></select></div>
+      <div><label class="block text-sm font-semibold text-gray-700 mb-2">Clinical Notes *</label><textarea name="note" required rows="6" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Clinical observations, diagnosis, treatment plan..."></textarea></div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl font-semibold hover:bg-gray-200">Cancel</button>
+      <button type="submit" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg">Save Note</button>
+    </div>
+  `;
+  openModal('New Clinical Note', formHtml, async (form) => {
+    await dbAdd('doctorNotes', {
+      patientName: form.patientName.value, doctorName: form.doctorName.value,
+      note: form.note.value, type: form.type.value,
+      createdAt: new Date().toISOString()
+    });
+    renderView('doctor-notes');
+  });
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await initDB();
+  document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+    document.getElementById('mobileSidebar').style.transform = 'translateX(0)';
+    document.getElementById('mobileOverlay').classList.remove('hidden');
+  });
+  document.getElementById('closeMobileSidebar').addEventListener('click', () => {
+    document.getElementById('mobileSidebar').style.transform = 'translateX(-100%)';
+    document.getElementById('mobileOverlay').classList.add('hidden');
+  });
+  document.getElementById('mobileOverlay').addEventListener('click', () => {
+    document.getElementById('mobileSidebar').style.transform = 'translateX(-100%)';
+    document.getElementById('mobileOverlay').classList.add('hidden');
+  });
+  document.getElementById('closeModal').addEventListener('click', closeModal);
+  document.getElementById('modal').addEventListener('click', (e) => {
+    if (e.target.id === 'modal') closeModal();
+  });
+  document.getElementById('modalForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (currentModalSubmitHandler) {
+      await currentModalSubmitHandler(e.target);
+    }
+    closeModal();
+  });
+});
+</script>
+
+<!-- App Footer -->
+<footer class="bg-white border-t border-gray-200 py-4 px-6 text-center fixed bottom-0 left-0 right-0 z-10">
+  <p class="text-xs text-gray-400">© 2026 MediHub • Trademark Designed By <span class="font-semibold text-gray-500">Digitalize Africa</span> • Created By <span class="font-semibold text-gray-500">Katlego Kenneth Mathunywa</span> (Digitalize Africa Founder) • Managed By <span class="font-semibold text-gray-500">Whispering Winds</span> • Headed By <span class="font-semibold text-gray-500">Nyasha Micheals</span> (Whispering Winds Founder)</p>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>
