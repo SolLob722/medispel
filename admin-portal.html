@@ -268,7 +268,8 @@ const dbDelete = (store, id) => new Promise((resolve, reject) => {
 
 const loadSampleData = async () => {
   const patients = await dbGetAll('patients');
-  if (patients.length > 0) return;
+  const admins = await dbGetAll('admins');
+  if (patients.length > 0 && admins.length > 0) return;
   const samplePatients = [
     { firstName: 'John', lastName: 'Smith', username: 'Patient1', password: 'Patient@123', email: 'john.smith@email.com', phone: '082 123 4567', idNumber: '8503155012089', dob: '1985-03-15', gender: 'Male', address: '123 Main St, Johannesburg, GP', postalCode: '2000', bloodType: 'O+', allergies: 'Penicillin', medicalAid: 'Discovery Health', medicalAidNumber: 'DH123456', chronicConditions: 'Hypertension, Type 2 Diabetes', currentMedications: 'Metformin 500mg, Lisinopril 10mg', medicalHistory: 'Appendectomy 2015', familyHistory: 'Father - Heart Disease', emergencyContactName: 'Jane Smith', emergencyContactPhone: '082 111 2222', emergencyContactRelation: 'Wife', status: 'pending', createdAt: new Date().toISOString() },
     { firstName: 'Emily', lastName: 'Johnson', username: 'Patient2', password: 'Patient@123', email: 'emily.j@email.com', phone: '083 234 5678', idNumber: '9007220023098', dob: '1990-07-22', gender: 'Female', address: '456 Oak Ave, Cape Town, WC', postalCode: '8000', bloodType: 'A+', allergies: 'None', medicalAid: 'Momentum', medicalAidNumber: 'MM789012', chronicConditions: 'Asthma', currentMedications: 'Salbutamol inhaler', medicalHistory: 'Tonsillectomy 2005', familyHistory: 'Mother - Asthma, Grandmother - Breast Cancer', emergencyContactName: 'Robert Johnson', emergencyContactPhone: '083 333 4444', emergencyContactRelation: 'Father', status: 'approved', createdAt: new Date().toISOString() }
