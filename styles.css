@@ -177,9 +177,15 @@ body { background: var(--bg); }
   0% { transform: scale(0.8); opacity: 1; }
   100% { transform: scale(2); opacity: 0; }
 }
+.scroll-hidden::-webkit-scrollbar { width: 6px; }
 
-.scroll-hidden::-webkit-scrollbar { display: none; }
-.scroll-hidden { -ms-overflow-style: none; scrollbar-width: none; }
+.scroll-hidden::-webkit-scrollbar-track { background: transparent; }
+
+.scroll-hidden::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+.scroll-hidden::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+.scroll-hidden { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
 
 .status-completed { background: #d1fae5; color: #065f46; }
 .status-pending { background: #fef3c7; color: #92400e; }
