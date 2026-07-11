@@ -568,7 +568,7 @@ const initDB = () => {
     };
     request.onupgradeneeded = (event) => {
       db = event.target.result;
-      const stores = ['patients', 'doctors', 'nurses', 'vitals', 'clinics', 'hospitals', 'medications', 'appointments', 'records', 'admins', 'medicalCodes', 'auditLogs', 'chatMessages', 'doctorSchedules', 'payments', 'expenses', 'claims', 'invoices', 'prescriptions', 'doctorNotes', 'procedures'];
+      const stores = ['patients', 'doctors', 'nurses', 'vitals', 'clinics', 'hospitals', 'medications', 'appointments', 'records', 'admins', 'medicalCodes', 'auditLogs', 'chatMessages', 'doctorSchedules', 'payments', 'expenses', 'claims', 'invoices', 'prescriptions', 'doctorNotes', 'procedures', 'vaccinations', 'vaccinationRecords'];
       stores.forEach(store => {
         if (!db.objectStoreNames.contains(store)) db.createObjectStore(store, { keyPath: 'id', autoIncrement: true });
       });
@@ -709,6 +709,50 @@ const loadSampleData = async () => {
     { name: 'ECG', category: 'Diagnostic', duration: '20 min', standard: true, _source: 'demo' },
   ];
   for (const p of sampleProcedures) await dbAdd('procedures', p);
+  const sampleVaccinations = [
+    // Baby (0-6 weeks)
+    { name: 'BCG (Bacillus Calmette-Guérin)', category: 'baby', ageGroup: 'At birth', dose: '0.05ml', route: 'Intradermal', schedule: 'At birth, left deltoid', billingCode: 'VAC-001', standard: true },
+    { name: 'OPV 0 (Oral Polio)', category: 'baby', ageGroup: 'At birth', dose: '2 drops', route: 'Oral', schedule: 'At birth', billingCode: 'VAC-002', standard: true },
+    { name: 'Hepatitis B Birth Dose', category: 'baby', ageGroup: 'Within 24 hrs', dose: '0.5ml', route: 'IM', schedule: 'Within 24 hours of birth', billingCode: 'VAC-003', standard: true },
+    // Child (6 weeks - 12 years)
+    { name: 'Hexavalent (DTaP-IPV-Hib-HepB) Dose 1', category: 'child', ageGroup: '6 weeks', dose: '0.5ml', route: 'IM', schedule: '6 weeks', billingCode: 'VAC-010', standard: true },
+    { name: 'Hexavalent (DTaP-IPV-Hib-HepB) Dose 2', category: 'child', ageGroup: '10 weeks', dose: '0.5ml', route: 'IM', schedule: '10 weeks', billingCode: 'VAC-011', standard: true },
+    { name: 'Hexavalent (DTaP-IPV-Hib-HepB) Dose 3', category: 'child', ageGroup: '14 weeks', dose: '0.5ml', route: 'IM', schedule: '14 weeks', billingCode: 'VAC-012', standard: true },
+    { name: 'Pneumococcal Conjugate (PCV) Dose 1', category: 'child', ageGroup: '6 weeks', dose: '0.5ml', route: 'IM', schedule: '6 weeks', billingCode: 'VAC-020', standard: true },
+    { name: 'Pneumococcal Conjugate (PCV) Dose 2', category: 'child', ageGroup: '14 weeks', dose: '0.5ml', route: 'IM', schedule: '14 weeks', billingCode: 'VAC-021', standard: true },
+    { name: 'Rotavirus Dose 1', category: 'child', ageGroup: '6 weeks', dose: '1.5ml', route: 'Oral', schedule: '6 weeks', billingCode: 'VAC-030', standard: true },
+    { name: 'Rotavirus Dose 2', category: 'child', ageGroup: '14 weeks', dose: '1.5ml', route: 'Oral', schedule: '14 weeks', billingCode: 'VAC-031', standard: true },
+    { name: 'Measles Vaccine Dose 1', category: 'child', ageGroup: '6 months', dose: '0.5ml', route: 'SC', schedule: '6 months', billingCode: 'VAC-040', standard: true },
+    { name: 'Measles Vaccine Dose 2', category: 'child', ageGroup: '12 months', dose: '0.5ml', route: 'SC', schedule: '12 months', billingCode: 'VAC-041', standard: true },
+    { name: 'OPV 1 (Oral Polio)', category: 'child', ageGroup: '6 weeks', dose: '2 drops', route: 'Oral', schedule: '6 weeks', billingCode: 'VAC-050', standard: true },
+    { name: 'OPV 2 (Oral Polio)', category: 'child', ageGroup: '10 weeks', dose: '2 drops', route: 'Oral', schedule: '10 weeks', billingCode: 'VAC-051', standard: true },
+    { name: 'OPV 3 (Oral Polio)', category: 'child', ageGroup: '14 weeks', dose: '2 drops', route: 'Oral', schedule: '14 weeks', billingCode: 'VAC-052', standard: true },
+    { name: 'MMR (Measles-Mumps-Rubella)', category: 'child', ageGroup: '12-15 months', dose: '0.5ml', route: 'SC', schedule: '12-15 months', billingCode: 'VAC-060', standard: true },
+    { name: 'DTaP Booster', category: 'child', ageGroup: '5-6 years', dose: '0.5ml', route: 'IM', schedule: '5-6 years', billingCode: 'VAC-070', standard: true },
+    { name: 'Td Booster (Tetanus-Diphtheria)', category: 'child', ageGroup: '12 years', dose: '0.5ml', route: 'IM', schedule: '12 years', billingCode: 'VAC-071', standard: true },
+    { name: 'HPV Dose 1', category: 'child', ageGroup: '9-12 years', dose: '0.5ml', route: 'IM', schedule: '9-12 years (girls)', billingCode: 'VAC-080', standard: true },
+    { name: 'HPV Dose 2', category: 'child', ageGroup: '9-12 years', dose: '0.5ml', route: 'IM', schedule: '9-12 years (girls), 6 months after Dose 1', billingCode: 'VAC-081', standard: true },
+    // Adult
+    { name: 'Td (Tetanus-Diphtheria) Booster', category: 'adult', ageGroup: 'Every 10 years', dose: '0.5ml', route: 'IM', schedule: 'Every 10 years', billingCode: 'VAC-100', standard: true },
+    { name: 'Influenza (Seasonal Flu)', category: 'adult', ageGroup: 'Annual', dose: '0.5ml', route: 'IM', schedule: 'Annually, especially 65+', billingCode: 'VAC-101', standard: true },
+    { name: 'Pneumococcal Polysaccharide (PPSV23)', category: 'adult', ageGroup: '65+ or at risk', dose: '0.5ml', route: 'IM/SC', schedule: '65+ or immunocompromised', billingCode: 'VAC-102', standard: true },
+    { name: 'Pneumococcal Conjugate (PCV13)', category: 'adult', ageGroup: '65+ or at risk', dose: '0.5ml', route: 'IM', schedule: '65+ or immunocompromised', billingCode: 'VAC-103', standard: true },
+    { name: 'Shingles (Herpes Zoster)', category: 'adult', ageGroup: '50+', dose: '0.5ml', route: 'IM', schedule: '50+ years, 2 doses 2-6 months apart', billingCode: 'VAC-104', standard: true },
+    { name: 'Hepatitis B Adult Series', category: 'adult', ageGroup: 'Any', dose: '1ml', route: 'IM', schedule: '3 doses (0, 1, 6 months)', billingCode: 'VAC-105', standard: true },
+    // Travel
+    { name: 'Yellow Fever', category: 'travel', ageGroup: '9 months+', dose: '0.5ml', route: 'SC', schedule: 'At least 10 days before travel, one dose lifelong', billingCode: 'VAC-200', standard: true },
+    { name: 'Typhoid (Oral)', category: 'travel', ageGroup: '6+ years', dose: '1 capsule', route: 'Oral', schedule: '4 capsules alternate days, complete 1 week before travel', billingCode: 'VAC-201', standard: true },
+    { name: 'Typhoid (Injectable)', category: 'travel', ageGroup: '2+ years', dose: '0.5ml', route: 'IM/SC', schedule: '2 weeks before travel, booster every 3 years', billingCode: 'VAC-202', standard: true },
+    { name: 'Cholera (Oral)', category: 'travel', ageGroup: '2+ years', dose: '1.5ml', route: 'Oral', schedule: '2 doses 1-6 weeks apart, 1 week before travel', billingCode: 'VAC-203', standard: true },
+    { name: 'Hepatitis A', category: 'travel', ageGroup: '1+ year', dose: '0.5ml', route: 'IM', schedule: '2 weeks before travel, booster 6-12 months', billingCode: 'VAC-204', standard: true },
+    { name: 'Hepatitis B Travel (Accelerated)', category: 'travel', ageGroup: 'Any', dose: '1ml', route: 'IM', schedule: 'Day 0, 7, 21, then 12 months', billingCode: 'VAC-205', standard: true },
+    { name: 'Rabies (Pre-exposure)', category: 'travel', ageGroup: 'Any', dose: '1ml', route: 'IM', schedule: 'Day 0, 7, 21-28 (3 doses)', billingCode: 'VAC-206', standard: true },
+    { name: 'Meningococcal ACWY', category: 'travel', ageGroup: '9 months+', dose: '0.5ml', route: 'IM', schedule: 'Hajj/Umrah, Sub-Saharan Africa, 2 weeks before travel', billingCode: 'VAC-207', standard: true },
+    { name: 'Japanese Encephalitis', category: 'travel', ageGroup: '2 months+', dose: '0.5ml', route: 'IM', schedule: 'Day 0 and 28, complete 1 week before travel', billingCode: 'VAC-208', standard: true },
+    { name: 'IPV Booster (Polio)', category: 'travel', ageGroup: 'Any', dose: '0.5ml', route: 'IM/SC', schedule: 'One dose if travelling to polio-affected countries', billingCode: 'VAC-209', standard: true },
+    { name: 'Yellow Fever + Typhoid Combo', category: 'travel', ageGroup: '2+ years', dose: 'As indicated', route: 'Various', schedule: 'Consult travel clinic, at least 2 weeks before departure', billingCode: 'VAC-210', standard: true },
+  ];
+  for (const v of sampleVaccinations) await dbAdd('vaccinations', v);
   const samplePrescriptions = [
     { patientId: 1, patientName: 'John Smith', doctorName: 'Dr. Sarah Wilson', medication: 'Metformin 500mg', dosage: '1 tablet twice daily', quantity: 60, repeats: 2, instructions: 'Take with meals', status: 'dispensed', prescribedDate: new Date(Date.now() - 86400000 * 5).toISOString(), notes: 'For diabetes management', _source: 'demo' },
     { patientId: 2, patientName: 'Emily Johnson', doctorName: 'Dr. Sarah Wilson', medication: 'Salbutamol Inhaler 100mcg', dosage: '2 puffs as needed', quantity: 1, repeats: 3, instructions: 'Use when short of breath', status: 'active', prescribedDate: new Date(Date.now() - 86400000 * 2).toISOString(), notes: 'For asthma', _source: 'demo' },
@@ -721,7 +765,7 @@ const loadSampleData = async () => {
   for (const n of sampleNotes) await dbAdd('doctorNotes', n);
 };
 
-const STORES = ['patients', 'doctors', 'nurses', 'admins', 'medicalCodes', 'payments', 'expenses', 'claims', 'doctorSchedules', 'clinics', 'hospitals', 'procedures', 'prescriptions', 'doctorNotes', 'messages', 'appointments'];
+const STORES = ['patients', 'doctors', 'nurses', 'admins', 'medicalCodes', 'payments', 'expenses', 'claims', 'doctorSchedules', 'clinics', 'hospitals', 'procedures', 'vaccinations', 'vaccinationRecords', 'prescriptions', 'doctorNotes', 'messages', 'appointments'];
 
 const clearAllData = async () => {
   if (!confirm('Are you sure you want to remove all demo data? This will clear all patients, doctors, nurses, payments, and other records. New data you added will also be deleted.')) return;
@@ -882,6 +926,7 @@ const getNavItems = () => {
     { id: 'my-appointments', icon: 'fa-calendar-alt', label: 'Appointments' },
     { id: 'my-finances', icon: 'fa-money-bill-wave', label: 'My Finances' },
     { id: 'find-doctors', icon: 'fa-search', label: 'Find Doctors' },
+    { id: 'my-vaccinations', icon: 'fa-syringe', label: 'My Vaccinations' },
     { id: 'chat', icon: 'fa-comments', label: 'Messages' }
   ];
   if (currentRole === 'nurse') return [
@@ -890,6 +935,8 @@ const getNavItems = () => {
     { id: 'appointments', icon: 'fa-calendar-check', label: 'Appointments' },
     { id: 'vitals', icon: 'fa-heartbeat', label: 'Vitals & Triage' },
     { id: 'medications', icon: 'fa-pills', label: 'Medications' },
+    { id: 'vaccinations', icon: 'fa-syringe', label: 'Vaccinations' },
+    { id: 'vaccination-records', icon: 'fa-check-circle', label: 'Vaccination Records' },
     { id: 'chat', icon: 'fa-comments', label: 'Messages' }
   ];
   if (currentRole === 'doctor') return [
@@ -900,6 +947,8 @@ const getNavItems = () => {
     { id: 'invoices', icon: 'fa-file-invoice', label: 'Invoices' },
     { id: 'payments', icon: 'fa-credit-card', label: 'Payments' },
     { id: 'medications', icon: 'fa-pills', label: 'Medications' },
+    { id: 'vaccinations', icon: 'fa-syringe', label: 'Vaccinations' },
+    { id: 'vaccination-records', icon: 'fa-check-circle', label: 'Vaccination Records' },
     { id: 'chat', icon: 'fa-comments', label: 'Messages' }
   ];
   if (currentRole === 'admin') return [
@@ -910,6 +959,8 @@ const getNavItems = () => {
     { id: 'nurses', icon: 'fa-user-nurse', label: 'Nurses' },
     { id: 'facilities', icon: 'fa-hospital', label: 'Facilities' },
     { id: 'medical-codes', icon: 'fa-code', label: 'Medical Codes' },
+    { id: 'vaccinations', icon: 'fa-syringe', label: 'Vaccinations' },
+    { id: 'vaccination-records', icon: 'fa-check-circle', label: 'Vaccination Records' },
     { id: 'invoices', icon: 'fa-file-invoice', label: 'Invoices' },
     { id: 'payments', icon: 'fa-credit-card', label: 'Payments' },
     { id: 'expenses', icon: 'fa-receipt', label: 'Expenses' },
@@ -976,6 +1027,9 @@ const renderView = async (view) => {
     case 'medications': await renderMedicationsLog(contentArea); break;
     case 'chat': await renderChat(contentArea); break;
     case 'vitals': await renderVitals(contentArea); break;
+    case 'vaccinations': renderVaccinations(container); break;
+    case 'vaccination-records': renderVaccinationRecords(container); break;
+    case 'my-vaccinations': renderMyVaccinations(container); break;
   }
 };
 
@@ -3014,6 +3068,274 @@ const renderVitals = async (container) => {
       </div>
     </div>
   `;
+};
+
+const renderVaccinations = async (container) => {
+  document.getElementById('pageTitle').textContent = 'Vaccinations';
+  document.getElementById('pageSubtitle').textContent = 'Vaccination catalogue and administration';
+  const vaccinations = await dbGetAll('vaccinations').then(forMode);
+  const categories = { baby: 'Baby / Infant (0-6 weeks)', child: 'Child (6 weeks - 12 years)', adult: 'Adult', travel: 'Travel' };
+  let html = `
+    <div class="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 bg-gradient-to-br from-emerald-100 to-teal-50 rounded-xl flex items-center justify-center">
+          <i class="fas fa-syringe text-emerald-600 text-xl"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900">Vaccination Catalogue</h3>
+          <p class="text-sm text-gray-500">${vaccinations.length} vaccines available</p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <select id="vacCategoryFilter" onchange="renderVaccinations(document.getElementById('contentArea'))" class="px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none text-sm bg-white">
+          <option value="all">All Categories</option>
+          <option value="baby">Baby / Infant (0-6 weeks)</option>
+          <option value="child">Child (6 weeks - 12 years)</option>
+          <option value="adult">Adult</option>
+          <option value="travel">Travel</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">`;
+  const catFilter = new URLSearchParams(window.location.search).get('cat') || 'all';
+  const filtered = catFilter === 'all' ? vaccinations : vaccinations.filter(v => v.category === catFilter);
+  if (filtered.length === 0) {
+    html += `<div class="lg:col-span-2 text-center py-12 text-gray-500"><i class="fas fa-syringe text-4xl mb-4 text-gray-300"></i><p>No vaccinations found in this category.</p></div>`;
+  }
+  for (const v of filtered) {
+    const catLabel = categories[v.category] || v.category;
+    html += `
+      <div class="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-all">
+        <div class="flex items-start justify-between mb-3">
+          <div>
+            <h4 class="font-bold text-gray-900">${v.name}</h4>
+            <span class="inline-block mt-1 px-3 py-1 text-xs font-medium rounded-full ${v.category === 'baby' ? 'bg-pink-100 text-pink-700' : v.category === 'child' ? 'bg-blue-100 text-blue-700' : v.category === 'adult' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}">${catLabel}</span>
+          </div>
+          <span class="text-sm font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">${v.billingCode}</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3 text-sm text-gray-600">
+          <div><span class="font-medium text-gray-800">Age Group:</span> ${v.ageGroup}</div>
+          <div><span class="font-medium text-gray-800">Dose:</span> ${v.dose}</div>
+          <div><span class="font-medium text-gray-800">Route:</span> ${v.route}</div>
+          <div><span class="font-medium text-gray-800">Schedule:</span> ${v.schedule}</div>
+        </div>
+        <button onclick="openRecordVaccination('${v.name.replace(/'/g, "\\'")}', '${v.billingCode}', '${v.category}')" class="mt-4 w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-medium hover:shadow-lg transition-all text-sm">
+          <i class="fas fa-check-circle mr-1"></i> Record Administration
+        </button>
+      </div>`;
+  }
+  html += `</div>`;
+  container.innerHTML = html;
+};
+
+const openRecordVaccination = (vacName, billingCode, category) => {
+  openModal('Record Vaccination Administration', `
+    <div class="space-y-5">
+      <div class="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4">
+        <p class="text-sm font-medium text-gray-700">Vaccine: <span class="font-bold text-gray-900">${vacName}</span></p>
+        <p class="text-sm text-gray-600">Billing Code: <span class="font-mono font-bold text-emerald-600">${billingCode}</span></p>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Patient *</label>
+        <select name="patientId" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none" id="vacPatientSelect"></select>
+      </div>
+      <input type="hidden" name="vaccineName" value="${vacName}">
+      <input type="hidden" name="billingCode" value="${billingCode}">
+      <input type="hidden" name="category" value="${category}">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Dose Administered</label>
+          <select name="doseNumber" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+            <option value="1">Dose 1</option>
+            <option value="2">Dose 2</option>
+            <option value="3">Dose 3</option>
+            <option value="4">Dose 4</option>
+            <option value="Booster">Booster</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Administration Date *</label>
+          <input type="date" name="adminDate" required value="${new Date().toISOString().split('T')[0]}" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Batch / Lot Number</label>
+        <input type="text" name="batchNumber" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none" placeholder="Enter batch number">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Administration Site</label>
+        <select name="adminSite" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+          <option value="left-deltoid">Left Deltoid</option>
+          <option value="right-deltoid">Right Deltoid</option>
+          <option value="left-thigh">Left Thigh (vastus lateralis)</option>
+          <option value="right-thigh">Right Thigh (vastus lateralis)</option>
+          <option value="left-gluteal">Left Gluteal</option>
+          <option value="right-gluteal">Right Gluteal</option>
+          <option value="oral">Oral</option>
+          <option value="intradermal">Intradermal</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Notes</label>
+        <textarea name="notes" rows="2" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none" placeholder="Any reactions or additional notes"></textarea>
+      </div>
+    </div>
+  `, async (form) => {
+    const patients = await dbGetAll('patients');
+    const patient = patients.find(p => p.id == form.patientId.value);
+    await dbAdd('vaccinationRecords', {
+      patientId: parseInt(form.patientId.value),
+      patientName: patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown',
+      vaccineName: form.vaccineName.value,
+      billingCode: form.billingCode.value,
+      category: form.category.value,
+      doseNumber: form.doseNumber.value,
+      adminDate: form.adminDate.value,
+      batchNumber: form.batchNumber.value || '',
+      adminSite: form.adminSite.value,
+      notes: form.notes.value || '',
+      administeredBy: currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Admin',
+      administeredByUsername: currentUser ? currentUser.username : 'admin',
+      createdAt: new Date().toISOString(),
+      _source: 'production'
+    });
+    await addAuditLog(`Vaccination recorded: ${form.vaccineName.value} for ${patient ? patient.firstName + ' ' + patient.lastName : 'Unknown'}`);
+    renderView('vaccination-records');
+  });
+  // Populate patient dropdown
+  setTimeout(async () => {
+    const sel = document.getElementById('vacPatientSelect');
+    if (!sel) return;
+    const patients = await dbGetAll('patients');
+    patients.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = `${p.firstName} ${p.lastName} (${p.idNumber || p.username})`;
+      sel.appendChild(opt);
+    });
+  }, 50);
+};
+
+const renderVaccinationRecords = async (container) => {
+  document.getElementById('pageTitle').textContent = 'Vaccination Records';
+  document.getElementById('pageSubtitle').textContent = 'History of administered vaccinations';
+  const records = await dbGetAll('vaccinationRecords').then(forMode);
+  records.sort((a, b) => new Date(b.adminDate) - new Date(a.adminDate));
+  const categories = { baby: 'Baby/Infant', child: 'Child', adult: 'Adult', travel: 'Travel' };
+  let html = `
+    <div class="mb-6 flex items-center gap-3">
+      <div class="w-12 h-12 bg-gradient-to-br from-teal-100 to-emerald-50 rounded-xl flex items-center justify-center">
+        <i class="fas fa-check-circle text-teal-600 text-xl"></i>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold text-gray-900">Administration Records</h3>
+        <p class="text-sm text-gray-500">${records.length} vaccinations recorded</p>
+      </div>
+    </div>
+    <div class="flex gap-2 mb-6">
+      <select id="vacRecordFilter" onchange="renderVaccinationRecords(document.getElementById('contentArea'))" class="px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none text-sm bg-white">
+        <option value="all">All Categories</option>
+        <option value="baby">Baby / Infant</option>
+        <option value="child">Child</option>
+        <option value="adult">Adult</option>
+        <option value="travel">Travel</option>
+      </select>
+      <input type="text" id="vacRecordSearch" placeholder="Search patient or vaccine..." class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none text-sm">
+    </div>
+    <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-200">
+              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Date</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Patient</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Vaccine</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Category</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Dose</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Billing Code</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Batch</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Administered By</th>
+            </tr>
+          </thead>
+          <tbody>`;
+  if (records.length === 0) {
+    html += `<tr><td colspan="8" class="text-center py-12 text-gray-500"><i class="fas fa-syringe text-3xl mb-2 text-gray-300"></i><p>No vaccination records yet.</p></td></tr>`;
+  }
+  for (const r of records) {
+    const catLabel = categories[r.category] || r.category;
+    html += `
+      <tr class="border-b border-gray-100 hover:bg-gray-50 transition-all">
+        <td class="px-4 py-3 text-sm text-gray-900">${new Date(r.adminDate).toLocaleDateString()}</td>
+        <td class="px-4 py-3 text-sm font-medium text-gray-900">${r.patientName}</td>
+        <td class="px-4 py-3 text-sm text-gray-700">${r.vaccineName}</td>
+        <td class="px-4 py-3"><span class="text-xs font-medium px-2 py-1 rounded-full ${r.category === 'baby' ? 'bg-pink-100 text-pink-700' : r.category === 'child' ? 'bg-blue-100 text-blue-700' : r.category === 'adult' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}">${catLabel}</span></td>
+        <td class="px-4 py-3 text-sm text-gray-700">${r.doseNumber}</td>
+        <td class="px-4 py-3"><span class="font-mono text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">${r.billingCode}</span></td>
+        <td class="px-4 py-3 text-sm text-gray-500 font-mono">${r.batchNumber || '-'}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">${r.administeredBy}</td>
+      </tr>`;
+  }
+  html += `</tbody></table></div></div>`;
+  container.innerHTML = html;
+  // Search handler
+  document.getElementById('vacRecordSearch')?.addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase();
+    const rows = container.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+};
+
+const renderMyVaccinations = async (container) => {
+  document.getElementById('pageTitle').textContent = 'My Vaccinations';
+  document.getElementById('pageSubtitle').textContent = 'Your vaccination records';
+  const records = await dbGetAll('vaccinationRecords').then(forMode);
+  const myRecords = records.filter(r => r.patientId === currentUser?.id || r.patientName === `${currentUser?.firstName} ${currentUser?.lastName}`);
+  myRecords.sort((a, b) => new Date(b.adminDate) - new Date(a.adminDate));
+  const categories = { baby: 'Baby/Infant', child: 'Child', adult: 'Adult', travel: 'Travel' };
+  let html = `
+    <div class="mb-6 flex items-center gap-3">
+      <div class="w-14 h-14 bg-gradient-to-br from-emerald-100 to-teal-50 rounded-2xl flex items-center justify-center">
+        <i class="fas fa-syringe text-emerald-600 text-2xl"></i>
+      </div>
+      <div>
+        <h3 class="text-xl font-bold text-gray-900">My Vaccination Records</h3>
+        <p class="text-sm text-gray-500">${myRecords.length} vaccination(s) on record</p>
+      </div>
+    </div>`;
+  if (myRecords.length === 0) {
+    html += `<div class="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+      <i class="fas fa-syringe text-5xl mb-4 text-gray-300"></i>
+      <p class="text-gray-500 text-lg font-medium">No vaccination records found</p>
+      <p class="text-gray-400 text-sm mt-1">Vaccinations administered to you will appear here.</p>
+    </div>`;
+  } else {
+    html += `<div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto"><table class="w-full"><thead><tr class="bg-gray-50 border-b border-gray-200">
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Date</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Vaccine</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Category</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Dose</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Billing Code</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Batch</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Administered By</th>
+      </tr></thead><tbody>`;
+    for (const r of myRecords) {
+      const catLabel = categories[r.category] || r.category;
+      html += `<tr class="border-b border-gray-100 hover:bg-gray-50">
+        <td class="px-4 py-3 text-sm">${new Date(r.adminDate).toLocaleDateString()}</td>
+        <td class="px-4 py-3 text-sm font-medium text-gray-900">${r.vaccineName}</td>
+        <td class="px-4 py-3"><span class="text-xs font-medium px-2 py-1 rounded-full ${r.category === 'baby' ? 'bg-pink-100 text-pink-700' : r.category === 'child' ? 'bg-blue-100 text-blue-700' : r.category === 'adult' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}">${catLabel}</span></td>
+        <td class="px-4 py-3 text-sm">${r.doseNumber}</td>
+        <td class="px-4 py-3"><span class="font-mono text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">${r.billingCode}</span></td>
+        <td class="px-4 py-3 text-sm font-mono text-gray-500">${r.batchNumber || '-'}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">${r.administeredBy}</td>
+      </tr>`;
+    }
+    html += `</tbody></table></div></div>`;
+  }
+  container.innerHTML = html;
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
