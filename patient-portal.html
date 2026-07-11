@@ -305,7 +305,7 @@ const initDB = () => {
     };
     request.onupgradeneeded = (event) => {
       db = event.target.result;
-      const stores = ['patients', 'doctors', 'nurses', 'vitals', 'clinics', 'hospitals', 'medications', 'appointments', 'records', 'admins', 'medicalCodes', 'auditLogs', 'chatMessages', 'doctorSchedules', 'payments', 'expenses', 'claims', 'invoices', 'prescriptions', 'doctorNotes', 'procedures'];
+      const stores = ['patients', 'doctors', 'nurses', 'vitals', 'clinics', 'hospitals', 'medications', 'appointments', 'records', 'admins', 'medicalCodes', 'auditLogs', 'chatMessages', 'doctorSchedules', 'payments', 'expenses', 'claims', 'invoices', 'prescriptions', 'doctorNotes', 'procedures', 'vaccinations', 'vaccinationRecords'];
       stores.forEach(store => {
         if (!db.objectStoreNames.contains(store)) db.createObjectStore(store, { keyPath: 'id', autoIncrement: true });
       });
@@ -459,7 +459,7 @@ const loadSampleData = async () => {
   for (const n of sampleNotes) await dbAdd('doctorNotes', n);
 };
 
-const STORES = ['patients', 'doctors', 'nurses', 'admins', 'medicalCodes', 'payments', 'expenses', 'claims', 'doctorSchedules', 'clinics', 'hospitals', 'procedures', 'prescriptions', 'doctorNotes', 'messages', 'appointments'];
+const STORES = ['patients', 'doctors', 'nurses', 'admins', 'medicalCodes', 'payments', 'expenses', 'claims', 'doctorSchedules', 'clinics', 'hospitals', 'procedures', 'prescriptions', 'doctorNotes', 'messages', 'appointments', 'vaccinations', 'vaccinationRecords'];
 
 const clearAllData = async () => {
   if (!confirm('Are you sure you want to remove all demo data? This will clear all patients, doctors, nurses, payments, and other records. New data you added will also be deleted.')) return;
@@ -573,6 +573,7 @@ const getNavItems = () => {
     { id: 'my-notes', icon: 'fa-sticky-note', label: 'Doctor Notes' },
     { id: 'my-finances', icon: 'fa-money-bill-wave', label: 'My Finances' },
     { id: 'find-doctors', icon: 'fa-search', label: 'Find Doctors' },
+    { id: 'my-vaccinations', icon: 'fa-syringe', label: 'My Vaccinations', view: 'my-vaccinations' },
     { id: 'chat', icon: 'fa-comments', label: 'Messages' }
   ];
   if (currentRole === 'nurse') return [
@@ -666,6 +667,7 @@ const renderView = async (view) => {
     case 'medications': await renderMedicationsLog(contentArea); break;
     case 'chat': await renderChat(contentArea); break;
     case 'vitals': await renderVitals(contentArea); break;
+    case 'my-vaccinations': renderMyVaccinations(contentArea); break;
   }
 };
 
@@ -1888,6 +1890,57 @@ const renderChat = async (container) => {
 
 const renderVitals = async (container) => {
   container.innerHTML = `<div class="fade-in"><p class="text-gray-500 text-center py-12">Vitals section</p></div>`;
+};
+
+const renderMyVaccinations = async (container) => {
+  document.getElementById('pageTitle').textContent = 'My Vaccinations';
+  document.getElementById('pageSubtitle').textContent = 'Your vaccination records';
+  const records = await dbGetAll('vaccinationRecords').then(forMode);
+  const myRecords = records.filter(r => r.patientId === currentUser?.id || r.patientName === `${currentUser?.firstName} ${currentUser?.lastName}`);
+  myRecords.sort((a, b) => new Date(b.adminDate) - new Date(a.adminDate));
+  const categories = { baby: 'Baby/Infant', child: 'Child', adult: 'Adult', travel: 'Travel' };
+  let html = `
+    <div class="mb-6 flex items-center gap-3">
+      <div class="w-14 h-14 bg-gradient-to-br from-emerald-100 to-teal-50 rounded-2xl flex items-center justify-center">
+        <i class="fas fa-syringe text-emerald-600 text-2xl"></i>
+      </div>
+      <div>
+        <h3 class="text-xl font-bold text-gray-900">My Vaccination Records</h3>
+        <p class="text-sm text-gray-500">${myRecords.length} vaccination(s) on record</p>
+      </div>
+    </div>`;
+  if (myRecords.length === 0) {
+    html += `<div class="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+      <i class="fas fa-syringe text-5xl mb-4 text-gray-300"></i>
+      <p class="text-gray-500 text-lg font-medium">No vaccination records found</p>
+      <p class="text-gray-400 text-sm mt-1">Vaccinations administered to you will appear here.</p>
+    </div>`;
+  } else {
+    html += `<div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto"><table class="w-full"><thead><tr class="bg-gray-50 border-b border-gray-200">
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Date</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Vaccine</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Category</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Dose</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Billing Code</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Batch</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Administered By</th>
+      </tr></thead><tbody>`;
+    for (const r of myRecords) {
+      const catLabel = categories[r.category] || r.category;
+      html += `<tr class="border-b border-gray-100 hover:bg-gray-50">
+        <td class="px-4 py-3 text-sm">${new Date(r.adminDate).toLocaleDateString()}</td>
+        <td class="px-4 py-3 text-sm font-medium text-gray-900">${r.vaccineName}</td>
+        <td class="px-4 py-3"><span class="text-xs font-medium px-2 py-1 rounded-full ${r.category === 'baby' ? 'bg-pink-100 text-pink-700' : r.category === 'child' ? 'bg-blue-100 text-blue-700' : r.category === 'adult' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}">${catLabel}</span></td>
+        <td class="px-4 py-3 text-sm">${r.doseNumber}</td>
+        <td class="px-4 py-3"><span class="font-mono text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">${r.billingCode}</span></td>
+        <td class="px-4 py-3 text-sm font-mono text-gray-500">${r.batchNumber || '-'}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">${r.administeredBy}</td>
+      </tr>`;
+    }
+    html += `</tbody></table></div></div>`;
+  }
+  container.innerHTML = html;
 };
 </script>
 
