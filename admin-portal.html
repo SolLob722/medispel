@@ -134,6 +134,20 @@
       
       <nav id="sidebarNav" class="flex-1 overflow-y-auto px-3 py-2 space-y-0.5 scroll-hidden"></nav>
       
+      <!-- Mode Toggle -->
+      <div class="px-4 py-3 border-t border-gray-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-flask text-sm text-gray-400"></i>
+            <span class="text-xs font-medium text-gray-600">Demo Mode</span>
+          </div>
+          <button id="modeToggle" onclick="toggleProductionMode()" class="relative w-11 h-6 rounded-full transition-colors duration-200 ease-in-out focus:outline-none" style="background-color: #10b981;">
+            <span class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow-sm transition-transform duration-200 ease-in-out" style="transform: translateX(0);"></span>
+          </button>
+        </div>
+        <p id="modeLabel" class="text-[10px] text-gray-400 mt-1">Sample data visible</p>
+      </div>
+      
       <div class="px-4 py-2.5 border-t border-gray-200 bg-gray-50">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 bg-gradient-to-br from-sky-500 to-emerald-500 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0" id="userAvatar">U</div>
@@ -254,6 +268,18 @@ let currentRole = 'admin';
 let currentView = 'dashboard';
 let editingId = null;
 let currentUser = null;
+let appMode = localStorage.getItem('medihub_mode') || 'demo';
+
+const setAppMode = (mode) => {
+  appMode = mode;
+  localStorage.setItem('medihub_mode', mode);
+  renderView(currentView);
+};
+
+const forMode = (data) => {
+  if (appMode === 'production') return data.filter(item => item._source !== 'demo');
+  return data;
+};
 
 const initDB = () => {
   return new Promise((resolve, reject) => {
@@ -385,19 +411,19 @@ const loadSampleData = async () => {
     { code: 'RPM-005', description: 'Rapid Hepatitis B test', type: 'RPM', createdAt: new Date().toISOString() }
   ];
   const samplePayments = [
-    { patientId: 2, patientName: 'Emily Johnson', amount: 550.00, method: 'medical-aid', medicalAid: 'Momentum', reference: 'MN-2025-001', date: new Date(Date.now() - 86400000 * 7).toISOString(), status: 'completed' },
-    { patientId: 2, patientName: 'Emily Johnson', amount: 350.00, method: 'cash', reference: 'CASH-001', date: new Date(Date.now() - 86400000 * 5).toISOString(), status: 'completed' },
-    { patientId: 1, patientName: 'John Smith', amount: 800.00, method: 'card', reference: 'CRD-789', date: new Date(Date.now() - 86400000 * 3).toISOString(), status: 'completed' },
-    { patientId: 2, patientName: 'Emily Johnson', amount: 450.00, method: 'medical-aid', medicalAid: 'Momentum', reference: 'MN-2025-002', date: new Date(Date.now() - 86400000).toISOString(), status: 'pending' }
+    { patientId: 2, patientName: 'Emily Johnson', amount: 550.00, method: 'medical-aid', medicalAid: 'Momentum', reference: 'MN-2025-001', date: new Date(Date.now() - 86400000 * 7).toISOString(), status: 'completed', _source: 'demo' },
+    { patientId: 2, patientName: 'Emily Johnson', amount: 350.00, method: 'cash', reference: 'CASH-001', date: new Date(Date.now() - 86400000 * 5).toISOString(), status: 'completed', _source: 'demo' },
+    { patientId: 1, patientName: 'John Smith', amount: 800.00, method: 'card', reference: 'CRD-789', date: new Date(Date.now() - 86400000 * 3).toISOString(), status: 'completed', _source: 'demo' },
+    { patientId: 2, patientName: 'Emily Johnson', amount: 450.00, method: 'medical-aid', medicalAid: 'Momentum', reference: 'MN-2025-002', date: new Date(Date.now() - 86400000).toISOString(), status: 'pending', _source: 'demo' }
   ];
   const sampleExpenses = [
-    { description: 'Medical Supplies', category: 'supplies', amount: 2500.00, date: new Date(Date.now() - 86400000 * 10).toISOString(), paymentMethod: 'eft' },
-    { description: 'Staff Salaries', category: 'salaries', amount: 45000.00, date: new Date(Date.now() - 86400000 * 7).toISOString(), paymentMethod: 'eft' },
-    { description: 'Utilities', category: 'utilities', amount: 3500.00, date: new Date(Date.now() - 86400000 * 5).toISOString(), paymentMethod: 'debit-order' },
-    { description: 'Equipment Maintenance', category: 'maintenance', amount: 1800.00, date: new Date(Date.now() - 86400000 * 2).toISOString(), paymentMethod: 'card' }
+    { description: 'Medical Supplies', category: 'supplies', amount: 2500.00, date: new Date(Date.now() - 86400000 * 10).toISOString(), paymentMethod: 'eft', _source: 'demo' },
+    { description: 'Staff Salaries', category: 'salaries', amount: 45000.00, date: new Date(Date.now() - 86400000 * 7).toISOString(), paymentMethod: 'eft', _source: 'demo' },
+    { description: 'Utilities', category: 'utilities', amount: 3500.00, date: new Date(Date.now() - 86400000 * 5).toISOString(), paymentMethod: 'debit-order', _source: 'demo' },
+    { description: 'Equipment Maintenance', category: 'maintenance', amount: 1800.00, date: new Date(Date.now() - 86400000 * 2).toISOString(), paymentMethod: 'card', _source: 'demo' }
   ];
   const sampleClaims = [
-    { patientId: 2, patientName: 'Emily Johnson', doctorId: 1, doctorName: 'Dr. Sarah Wilson', medicalAid: 'Momentum', memberNumber: 'MM789012', amount: 1200.00, serviceDate: new Date(Date.now() - 86400000 * 14).toISOString(), status: 'submitted', codes: ['Z00'] }
+    { patientId: 2, patientName: 'Emily Johnson', doctorId: 1, doctorName: 'Dr. Sarah Wilson', medicalAid: 'Momentum', memberNumber: 'MM789012', amount: 1200.00, serviceDate: new Date(Date.now() - 86400000 * 14).toISOString(), status: 'submitted', codes: ['Z00'], _source: 'demo' }
   ];
   const sampleSchedules = [
     { doctorId: 1, doctorName: 'Dr. Sarah Wilson', day: 'Monday', startTime: '09:00', endTime: '17:00', available: true },
@@ -431,32 +457,32 @@ const loadSampleData = async () => {
     for (const h of sampleHospitals) await dbAdd('hospitals', h);
   }
   const sampleProcedures = [
-    { name: 'General Consultation', category: 'Consultation', duration: '15 min', standard: true },
-    { name: 'Blood Pressure Check', category: 'Vitals', duration: '5 min', standard: true },
-    { name: 'Blood Glucose Test', category: 'Lab', duration: '5 min', standard: true },
-    { name: 'Urine Test', category: 'Lab', duration: '10 min', standard: true },
-    { name: 'HIV Test (Rapid)', category: 'Lab', duration: '15 min', standard: true },
-    { name: 'Pap Smear', category: 'Screening', duration: '20 min', standard: true },
-    { name: 'TB Screening', category: 'Screening', duration: '15 min', standard: true },
-    { name: 'Child Immunisation', category: 'Prevention', duration: '10 min', standard: true },
-    { name: 'Family Planning', category: 'Consultation', duration: '15 min', standard: true },
-    { name: 'Wound Dressing', category: 'Procedure', duration: '15 min', standard: true },
-    { name: 'ECG', category: 'Diagnostic', duration: '20 min', standard: true },
-    { name: 'Counselling Session', category: 'Mental Health', duration: '30 min', standard: true },
-    { name: 'Nutrition Assessment', category: 'Consultation', duration: '20 min', standard: true },
-    { name: 'Eye Test', category: 'Screening', duration: '15 min', standard: true },
-    { name: 'Dental Check-up', category: 'Dental', duration: '20 min', standard: true },
+    { name: 'General Consultation', category: 'Consultation', duration: '15 min', standard: true, _source: 'demo' },
+    { name: 'Blood Pressure Check', category: 'Vitals', duration: '5 min', standard: true, _source: 'demo' },
+    { name: 'Blood Glucose Test', category: 'Lab', duration: '5 min', standard: true, _source: 'demo' },
+    { name: 'Urine Test', category: 'Lab', duration: '10 min', standard: true, _source: 'demo' },
+    { name: 'HIV Test (Rapid)', category: 'Lab', duration: '15 min', standard: true, _source: 'demo' },
+    { name: 'Pap Smear', category: 'Screening', duration: '20 min', standard: true, _source: 'demo' },
+    { name: 'TB Screening', category: 'Screening', duration: '15 min', standard: true, _source: 'demo' },
+    { name: 'Child Immunisation', category: 'Prevention', duration: '10 min', standard: true, _source: 'demo' },
+    { name: 'Family Planning', category: 'Consultation', duration: '15 min', standard: true, _source: 'demo' },
+    { name: 'Wound Dressing', category: 'Procedure', duration: '15 min', standard: true, _source: 'demo' },
+    { name: 'ECG', category: 'Diagnostic', duration: '20 min', standard: true, _source: 'demo' },
+    { name: 'Counselling Session', category: 'Mental Health', duration: '30 min', standard: true, _source: 'demo' },
+    { name: 'Nutrition Assessment', category: 'Consultation', duration: '20 min', standard: true, _source: 'demo' },
+    { name: 'Eye Test', category: 'Screening', duration: '15 min', standard: true, _source: 'demo' },
+    { name: 'Dental Check-up', category: 'Dental', duration: '20 min', standard: true, _source: 'demo' },
   ];
   for (const p of sampleProcedures) await dbAdd('procedures', p);
   const samplePrescriptions = [
-    { patientId: 1, patientName: 'John Smith', doctorName: 'Dr. Sarah Wilson', medication: 'Metformin 500mg', dosage: '1 tablet twice daily', quantity: 60, repeats: 2, instructions: 'Take with meals', status: 'dispensed', prescribedDate: new Date(Date.now() - 86400000 * 5).toISOString(), notes: 'For diabetes management' },
-    { patientId: 2, patientName: 'Emily Johnson', doctorName: 'Dr. Sarah Wilson', medication: 'Salbutamol Inhaler 100mcg', dosage: '2 puffs as needed', quantity: 1, repeats: 3, instructions: 'Use when experiencing shortness of breath', status: 'active', prescribedDate: new Date(Date.now() - 86400000 * 2).toISOString(), notes: 'For asthma' },
-    { patientId: 1, patientName: 'John Smith', doctorName: 'Dr. James Miller', medication: 'Lisinopril 10mg', dosage: '1 tablet daily', quantity: 30, repeats: 5, instructions: 'Take in the morning', status: 'pending', prescribedDate: new Date().toISOString(), notes: 'For hypertension' },
+    { patientId: 1, patientName: 'John Smith', doctorName: 'Dr. Sarah Wilson', medication: 'Metformin 500mg', dosage: '1 tablet twice daily', quantity: 60, repeats: 2, instructions: 'Take with meals', status: 'dispensed', prescribedDate: new Date(Date.now() - 86400000 * 5).toISOString(), notes: 'For diabetes management', _source: 'demo' },
+    { patientId: 2, patientName: 'Emily Johnson', doctorName: 'Dr. Sarah Wilson', medication: 'Salbutamol Inhaler 100mcg', dosage: '2 puffs as needed', quantity: 1, repeats: 3, instructions: 'Use when experiencing shortness of breath', status: 'active', prescribedDate: new Date(Date.now() - 86400000 * 2).toISOString(), notes: 'For asthma', _source: 'demo' },
+    { patientId: 1, patientName: 'John Smith', doctorName: 'Dr. James Miller', medication: 'Lisinopril 10mg', dosage: '1 tablet daily', quantity: 30, repeats: 5, instructions: 'Take in the morning', status: 'pending', prescribedDate: new Date().toISOString(), notes: 'For hypertension', _source: 'demo' },
   ];
   for (const p of samplePrescriptions) await dbAdd('prescriptions', p);
   const sampleNotes = [
-    { patientId: 1, patientName: 'John Smith', doctorName: 'Dr. Sarah Wilson', note: 'Patient presenting with elevated BP 145/95. Reviewing current medication. Advised lifestyle modifications including reduced salt intake and 30min daily exercise.', type: 'consultation', createdAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-    { patientId: 2, patientName: 'Emily Johnson', doctorName: 'Dr. Sarah Wilson', note: 'Asthma review. Patient reports good control with current inhaler. Peak flow within normal range. Continue current management plan.', type: 'follow-up', createdAt: new Date(Date.now() - 86400000 * 2).toISOString() },
+    { patientId: 1, patientName: 'John Smith', doctorName: 'Dr. Sarah Wilson', note: 'Patient presenting with elevated BP 145/95. Reviewing current medication. Advised lifestyle modifications including reduced salt intake and 30min daily exercise.', type: 'consultation', createdAt: new Date(Date.now() - 86400000 * 5).toISOString(), _source: 'demo' },
+    { patientId: 2, patientName: 'Emily Johnson', doctorName: 'Dr. Sarah Wilson', note: 'Asthma review. Patient reports good control with current inhaler. Peak flow within normal range. Continue current management plan.', type: 'follow-up', createdAt: new Date(Date.now() - 86400000 * 2).toISOString(), _source: 'demo' },
   ];
   for (const n of sampleNotes) await dbAdd('doctorNotes', n);
 };
@@ -480,6 +506,27 @@ const openDataManagement = () => {
 const closeDataManagement = () => {
   const overlay = document.getElementById('dataManagementOverlay');
   if (overlay) overlay.classList.add('hidden');
+};
+
+const toggleProductionMode = () => {
+  const newMode = appMode === 'demo' ? 'production' : 'demo';
+  setAppMode(newMode);
+  const btn = document.getElementById('modeToggle');
+  const label = document.getElementById('modeLabel');
+  const text = btn.parentElement.querySelector('span.text-xs');
+  if (newMode === 'production') {
+    btn.style.backgroundColor = '#6366f1';
+    btn.querySelector('span').style.transform = 'translateX(20px)';
+    if (text) text.textContent = 'Production Mode';
+    if (label) label.textContent = 'Only real data shown';
+    showToast('Production mode enabled - demo data hidden', 'info');
+  } else {
+    btn.style.backgroundColor = '#10b981';
+    btn.querySelector('span').style.transform = 'translateX(0)';
+    if (text) text.textContent = 'Demo Mode';
+    if (label) label.textContent = 'Sample data visible';
+    showToast('Demo mode enabled - sample data visible', 'info');
+  }
 };
 
 const openAddPatientModal = () => {
@@ -724,9 +771,9 @@ const renderDashboard = async (container) => {
   const patients = await dbGetAll('patients');
   const doctors = await dbGetAll('doctors');
   const nurses = await dbGetAll('nurses');
-  const appointments = await dbGetAll('appointments');
-  const payments = await dbGetAll('payments');
-  const expenses = await dbGetAll('expenses');
+  const appointments = await dbGetAll('appointments').then(forMode);
+  const payments = await dbGetAll('payments').then(forMode);
+  const expenses = await dbGetAll('expenses').then(forMode);
   const pendingPatients = patients.filter(p => p.status === 'pending');
   const pendingDoctors = doctors.filter(d => d.status === 'pending');
   const pendingNurses = nurses.filter(n => n.status === 'pending');
@@ -974,7 +1021,7 @@ const renderDashboard = async (container) => {
 };
 
 const addAuditLog = async (action) => {
-  await dbAdd('auditLogs', { action, timestamp: new Date().toISOString(), userId: 1 });
+  await dbAdd('auditLogs', { action, timestamp: new Date().toISOString(), userId: 1, _source: 'production' });
 };
 
 const approveUser = async (store, id) => {
@@ -1442,7 +1489,7 @@ const openCashPaymentModal = () => {
     const paymentData = {
       patientName: form.patientName.value, patientId: form.patientId.value ? parseInt(form.patientId.value) : null,
       amount, method: 'cash', reference: 'CASH-' + receiptNo, receiptNo,
-      status: 'completed', date: new Date().toISOString()
+      status: 'completed', date: new Date().toISOString(), _source: 'production'
     };
     await dbAdd('payments', paymentData);
     await addAuditLog(`Cash payment received from ${paymentData.patientName}: ${formatCurrency(amount)} (Change: ${formatCurrency(change)})`);
@@ -1475,7 +1522,7 @@ const openEFTPaymentModal = () => {
     const paymentData = {
       patientName: form.patientName.value, patientId: form.patientId.value ? parseInt(form.patientId.value) : null,
       amount, method: 'eft', reference: ref, receiptNo: 'EFT-' + ref,
-      bank: form.bank.value || '', status: form.status.value, date: new Date().toISOString()
+      bank: form.bank.value || '', status: form.status.value, date: new Date().toISOString(), _source: 'production'
     };
     await dbAdd('payments', paymentData);
     await addAuditLog(`EFT payment from ${paymentData.patientName}: ${formatCurrency(amount)} (Ref: ${ref})`);
@@ -1510,7 +1557,7 @@ const openRecordPaymentModal = () => {
   openModal('Record Payment', formHtml, async (form) => {
     const paymentData = {
       patientName: form.patientName.value, patientId: form.patientId.value ? parseInt(form.patientId.value) : null, amount: parseFloat(form.amount.value),
-      method: form.method.value, reference: form.reference.value || '', medicalAid: form.medicalAid.value || '', status: form.status.value, date: new Date().toISOString()
+      method: form.method.value, reference: form.reference.value || '', medicalAid: form.medicalAid.value || '', status: form.status.value, date: new Date().toISOString(), _source: 'production'
     };
     await dbAdd('payments', paymentData);
     await addAuditLog(`Recorded payment from ${paymentData.patientName}: ${formatCurrency(paymentData.amount)}`);
@@ -1519,7 +1566,7 @@ const openRecordPaymentModal = () => {
 };
 
 const renderPayments = async (container) => {
-  const payments = await dbGetAll('payments');
+  const payments = await dbGetAll('payments').then(forMode);
   const totalRevenue = payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0);
   const byMethod = {
     'medical-aid': payments.filter(p => p.method === 'medical-aid').reduce((sum, p) => sum + p.amount, 0),
@@ -1623,7 +1670,7 @@ const openCreateInvoiceModal = () => {
     const invoiceData = {
       patientName: form.patientName.value, patientId: form.patientId.value ? parseInt(form.patientId.value) : null,
       doctorName: form.doctorName.value || '', description: form.description.value, amount, tax, total: amount + taxAmount,
-      dueDate: form.dueDate.value, status: form.status.value, createdAt: new Date().toISOString()
+      dueDate: form.dueDate.value, status: form.status.value, createdAt: new Date().toISOString(), _source: 'production'
     };
     await dbAdd('invoices', invoiceData);
     await addAuditLog(`Created invoice for ${invoiceData.patientName}: ${formatCurrency(invoiceData.total)}`);
@@ -1632,7 +1679,7 @@ const openCreateInvoiceModal = () => {
 };
 
 const renderInvoices = async (container) => {
-  const invoices = await dbGetAll('invoices');
+  const invoices = await dbGetAll('invoices').then(forMode);
   const totalUnpaid = invoices.filter(i => i.status === 'unpaid').reduce((s, i) => s + i.total, 0);
   const totalPaid = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.total, 0);
   const totalOverdue = invoices.filter(i => i.status === 'overdue').reduce((s, i) => s + i.total, 0);
@@ -1718,7 +1765,7 @@ const openAddExpenseModal = () => {
   openModal('Add Expense', formHtml, async (form) => {
     const expenseData = {
       description: form.description.value, amount: parseFloat(form.amount.value), category: form.category.value,
-      paymentMethod: form.paymentMethod.value, date: new Date().toISOString()
+      paymentMethod: form.paymentMethod.value, date: new Date().toISOString(), _source: 'production'
     };
     await dbAdd('expenses', expenseData);
     await addAuditLog(`Added expense: ${expenseData.description} - ${formatCurrency(expenseData.amount)}`);
@@ -1727,7 +1774,7 @@ const openAddExpenseModal = () => {
 };
 
 const renderExpenses = async (container) => {
-  const expenses = await dbGetAll('expenses');
+  const expenses = await dbGetAll('expenses').then(forMode);
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
   const byCategory = {};
   expenses.forEach(e => { byCategory[e.category] = (byCategory[e.category] || 0) + e.amount; });
@@ -1805,7 +1852,7 @@ const openSubmitClaimModal = () => {
       patientName: form.patientName.value, patientId: form.patientId.value ? parseInt(form.patientId.value) : null,
       doctorName: form.doctorName.value || '', medicalAid: form.medicalAid.value, memberNumber: form.memberNumber.value,
       amount: parseFloat(form.amount.value),
-      serviceDate: form.serviceDate.value ? new Date(form.serviceDate.value).toISOString() : new Date().toISOString(), status: form.status.value, codes: []
+      serviceDate: form.serviceDate.value ? new Date(form.serviceDate.value).toISOString() : new Date().toISOString(), status: form.status.value, codes: [], _source: 'production'
     };
     await dbAdd('claims', claimData);
     await addAuditLog(`Submitted claim for ${claimData.patientName}: ${formatCurrency(claimData.amount)}`);
@@ -1823,7 +1870,7 @@ const updateClaimStatus = async (id, newStatus) => {
 };
 
 const renderClaims = async (container) => {
-  const claims = await dbGetAll('claims');
+  const claims = await dbGetAll('claims').then(forMode);
   document.getElementById('pageTitle').textContent = 'Claims';
   document.getElementById('pageSubtitle').textContent = 'Manage medical aid claims';
   container.innerHTML = `
@@ -1899,13 +1946,13 @@ const renderReports = async (container) => {
   const patients = await dbGetAll('patients');
   const doctors = await dbGetAll('doctors');
   const nurses = await dbGetAll('nurses');
-  const payments = await dbGetAll('payments');
-  const expenses = await dbGetAll('expenses');
-  const claims = await dbGetAll('claims');
-  const invoices = await dbGetAll('invoices');
-  const appointments = await dbGetAll('appointments');
-  const prescriptions = await dbGetAll('prescriptions');
-  const auditLogs = await dbGetAll('auditLogs');
+  const payments = await dbGetAll('payments').then(forMode);
+  const expenses = await dbGetAll('expenses').then(forMode);
+  const claims = await dbGetAll('claims').then(forMode);
+  const invoices = await dbGetAll('invoices').then(forMode);
+  const appointments = await dbGetAll('appointments').then(forMode);
+  const prescriptions = await dbGetAll('prescriptions').then(forMode);
+  const auditLogs = await dbGetAll('auditLogs').then(forMode);
   
   document.getElementById('pageTitle').textContent = 'Reports & Analytics';
   document.getElementById('pageSubtitle').textContent = 'View comprehensive reports and analytics';
@@ -2091,7 +2138,7 @@ const renderMedicationsLog = async (container) => {
 };
 
 const renderChat = async (container) => {
-  const messages = await dbGetAll('chatMessages');
+  const messages = await dbGetAll('chatMessages').then(forMode);
   document.getElementById('pageTitle').textContent = 'Messages';
   document.getElementById('pageSubtitle').textContent = 'Chat with your care team';
   container.innerHTML = `
@@ -2123,7 +2170,7 @@ const renderChat = async (container) => {
     const input = document.getElementById('chatInput');
     const msg = input.value.trim();
     if (!msg) return;
-    await dbAdd('chatMessages', { message: msg, fromMe: true, timestamp: new Date().toISOString() });
+    await dbAdd('chatMessages', { message: msg, fromMe: true, timestamp: new Date().toISOString(), _source: 'production' });
     input.value = '';
     renderChat(container);
   });
@@ -2136,7 +2183,7 @@ const renderVitals = async (container) => {
 };
 
 const renderPrescriptions = async (container) => {
-  const prescriptions = await dbGetAll('prescriptions');
+  const prescriptions = await dbGetAll('prescriptions').then(forMode);
   const patients = await dbGetAll('patients');
   document.getElementById('pageTitle').textContent = 'Prescriptions';
   document.getElementById('pageSubtitle').textContent = 'Manage patient prescriptions';
@@ -2221,7 +2268,8 @@ const openAddPrescriptionModal = () => {
       instructions: form.instructions.value,
       notes: form.notes.value,
       status: 'pending',
-      prescribedDate: new Date().toISOString()
+      prescribedDate: new Date().toISOString(),
+      _source: 'production'
     });
     await addAuditLog(`New prescription created: ${form.medication.value} for ${form.patientName.value}`);
     renderView('prescriptions');
@@ -2229,7 +2277,7 @@ const openAddPrescriptionModal = () => {
 };
 
 const updatePrescriptionStatus = async (id, newStatus) => {
-  const prescriptions = await dbGetAll('prescriptions');
+  const prescriptions = await dbGetAll('prescriptions').then(forMode);
   const presc = prescriptions.find(p => (p.id === id || p._id === id || p.$loki === id));
   if (!presc) return;
   presc.status = newStatus;
@@ -2239,7 +2287,7 @@ const updatePrescriptionStatus = async (id, newStatus) => {
 };
 
 const renderProcedures = async (container) => {
-  const procedures = await dbGetAll('procedures');
+  const procedures = await dbGetAll('procedures').then(forMode);
   document.getElementById('pageTitle').textContent = 'Standard Procedures';
   document.getElementById('pageSubtitle').textContent = 'SA medical procedures checklist & claiming codes';
   const categories = [...new Set(procedures.map(p => p.category))];
@@ -2279,7 +2327,7 @@ const renderProcedures = async (container) => {
 };
 
 const toggleProcedure = async (id) => {
-  const procedures = await dbGetAll('procedures');
+  const procedures = await dbGetAll('procedures').then(forMode);
   const proc = procedures.find(p => (p.id === id || p._id === id || p.$loki === id));
   if (!proc) return;
   proc.checked = !proc.checked;
@@ -2300,14 +2348,14 @@ const openAddProcedureModal = () => {
     </div>
   `;
   openModal('Add New Procedure', formHtml, async (form) => {
-    await dbAdd('procedures', { name: form.name.value, category: form.category.value, duration: form.duration.value, standard: false, checked: false });
+    await dbAdd('procedures', { name: form.name.value, category: form.category.value, duration: form.duration.value, standard: false, checked: false, _source: 'production' });
     await addAuditLog(`New procedure added: ${form.name.value}`);
     renderView('procedures');
   });
 };
 
 const renderDoctorNotes = async (container) => {
-  const notes = await dbGetAll('doctorNotes');
+  const notes = await dbGetAll('doctorNotes').then(forMode);
   const patients = await dbGetAll('patients');
   document.getElementById('pageTitle').textContent = 'Doctor Notes';
   document.getElementById('pageSubtitle').textContent = 'Clinical notes from consultations';
@@ -2368,7 +2416,8 @@ const openAddDoctorNoteModal = () => {
       doctorName: form.doctorName.value,
       note: form.note.value,
       type: form.type.value,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      _source: 'production'
     });
     await addAuditLog(`Clinical note added for ${form.patientName.value} by ${form.doctorName.value}`);
     renderView('doctor-notes');
@@ -2395,6 +2444,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       await loadUserData();
       renderNavigation();
       renderView('dashboard');
+      // Init mode toggle UI
+      if (appMode === 'production') {
+        setTimeout(() => {
+          const btn = document.getElementById('modeToggle');
+          if (btn) {
+            btn.style.backgroundColor = '#6366f1';
+            btn.querySelector('span').style.transform = 'translateX(20px)';
+            const text = btn.parentElement?.querySelector('span.text-xs');
+            const label = document.getElementById('modeLabel');
+            if (text) text.textContent = 'Production Mode';
+            if (label) label.textContent = 'Only real data shown';
+          }
+        }, 100);
+      }
     } else {
       document.getElementById('loginError').textContent = 'Invalid username or password';
       document.getElementById('loginError').classList.remove('hidden');
